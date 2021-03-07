@@ -89,22 +89,23 @@ def main(argv):
 
     model_dir = 'models/'
     utils.create_folder(model_dir)
-    unique_name = '{}_ov{}_split{}_{}{}_3d{}_{}'.format(
-        params['dataset'], params['overlap'], params['split'], params['mode'], params['weakness'],
+    unique_name = '{}_ov{}_train{}_val{}_{}{}_3d{}_{}'.format(
+        params['dataset'], params['overlap'], params['train_split'], params['val_split'],
+        params['mode'], params['weakness'],
         int(params['cnn_3d']), job_id
     )
     unique_name = os.path.join(model_dir, unique_name)
     print("unique_name: {}\n".format(unique_name))
 
     data_gen_train = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['split'], db=params['db'], nfft=params['nfft'],
+        dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'], nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
         azi_only=params['azi_only']
     )
 
     data_gen_test = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['split'], db=params['db'], nfft=params['nfft'],
+        dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'], nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
         azi_only=params['azi_only'], shuffle=False
@@ -148,7 +149,7 @@ def main(argv):
     val_loss = np.zeros(params['nb_epochs'])
     doa_loss = np.zeros((params['nb_epochs'], 6))
     sed_loss = np.zeros((params['nb_epochs'], 2))
-    nb_epoch = 2 if params['quick_test'] else params['nb_epochs']
+    nb_epoch = params['nb_epochs']
     for epoch_cnt in range(nb_epoch):
         start = time.time()
         hist = model.fit_generator(

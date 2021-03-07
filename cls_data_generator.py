@@ -53,6 +53,7 @@ class DataGenerator(object):
                 self._datagen_mode, len(self._filenames_list),  self._nb_classes,
                 self._nb_frames_file, self._feat_len, self._2_nb_ch, self._label_len
                 )
+
         )
 
         print(
@@ -79,8 +80,8 @@ class DataGenerator(object):
 
     def _get_label_filenames_sizes(self):
         for filename in os.listdir(self._label_dir):
-            if self._datagen_mode in filename:
-                self._filenames_list.append(filename)
+            # if self._datagen_mode in filename:
+            self._filenames_list.append(filename)
 
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]

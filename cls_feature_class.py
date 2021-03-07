@@ -7,7 +7,7 @@ import numpy as np
 import scipy.io.wavfile as wav
 import utils
 from sklearn import preprocessing
-from sklearn.externals import joblib
+import joblib
 from IPython import embed
 import matplotlib.pyplot as plot
 plot.switch_backend('agg')
@@ -18,8 +18,9 @@ class FeatureClass:
 
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
+        datasets_dir = '/media/gio/1TB/Documents/Sapienza uniroma/SELDnet/datasets'
         if dataset == 'ansim':
-            self._base_folder = os.path.join('/scratch/asignal/sharath', 'doa_data/')
+            self._base_folder = os.path.join(datasets_dir, 'ansim')
         elif dataset == 'resim':
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_data_echoic/')
         elif dataset == 'cansim':
@@ -149,10 +150,11 @@ class FeatureClass:
         return spectra
 
     def _extract_spectrogram_for_file(self, audio_filename):
-        audio_in, fs = self._load_audio(os.path.join(self._aud_dir, audio_filename))
-        audio_spec = self._spectrogram(audio_in)
-        print(audio_spec.shape)
-        np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
+        if not os.path.exists(os.path.join(self._feat_dir, audio_filename+'.npy')):
+            audio_in, fs = self._load_audio(os.path.join(self._aud_dir, audio_filename))
+            audio_spec = self._spectrogram(audio_in)
+            # print(audio_spec.shape)
+            np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
 
     # OUTPUT LABELS
     def _read_desc_file(self, desc_filename):
@@ -167,7 +169,8 @@ class FeatureClass:
             if 'real' in self._dataset:
                 desc_file['class'].append(split_line[0].split('.')[0].split('-')[1])
             else:
-                desc_file['class'].append(split_line[0].split('.')[0][:-3])
+                desc_file['class'].append(split_line[0].split('.')[0])
+                # desc_file['class'].append(split_line[0].split('.')[0][:-3])
             desc_file['start'].append(int(np.floor(float(split_line[1])*self._frame_res)))
             desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(float(split_line[3])))
@@ -370,31 +373,33 @@ class FeatureClass:
         print('Estimating weights for normalizing feature files:')
         print('\t\tfeat_dir {}'.format(self._feat_dir))
 
-        spec_scaler = preprocessing.StandardScaler()
-        train_cnt = 0
-        for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            if 'train' in file_name:
-                print(file_cnt, train_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                del feat_file
-                train_cnt += 1
-        joblib.dump(
-            spec_scaler,
-            normalized_features_wts_file
-        )
+        if not os.path.exists(normalized_features_wts_file):
+            spec_scaler = preprocessing.StandardScaler()
+            train_cnt = 0
+            for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
+                if 'split1' in file_name or 'split2' in file_name:
+                    print(file_cnt, train_cnt, file_name)
+                    feat_file = np.load(os.path.join(self._feat_dir, file_name))
+                    spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+                    del feat_file
+                    train_cnt += 1
+            joblib.dump(
+                spec_scaler,
+                normalized_features_wts_file
+            )
 
         print('Normalizing feature files:')
-        # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
+        spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
                 print(file_cnt, file_name)
-                feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                np.save(
-                    os.path.join(self._feat_dir_norm, file_name),
-                    feat_file
-                )
-                del feat_file
+                if not os.path.exists(os.path.join(self._feat_dir_norm, file_name)):
+                    feat_file = np.load(os.path.join(self._feat_dir, file_name))
+                    feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+                    np.save(
+                        os.path.join(self._feat_dir_norm, file_name),
+                        feat_file
+                    )
+                    del feat_file
         print('normalized files written to {} folder and the scaler to {}'.format(
             self._feat_dir_norm, normalized_features_wts_file))
 
