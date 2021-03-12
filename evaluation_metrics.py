@@ -201,9 +201,9 @@ def compute_doa_scores_regr_xy(pred, gt, pred_sed, gt_sed):
     return er_metric, conf_mat
 
 
-def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
-    nb_src_gt_list = np.zeros(gt.shape[0]).astype(int)
-    nb_src_pred_list = np.zeros(gt.shape[0]).astype(int)
+def compute_doa_scores_regr_xyz(pred_doa, gt_doa, pred_sed, gt_sed):
+    nb_src_gt_list = np.zeros(gt_doa.shape[0]).astype(int)
+    nb_src_pred_list = np.zeros(gt_doa.shape[0]).astype(int)
     good_frame_cnt = 0
     less_frame_cnt = 0
     more_frame_cnt = 0
@@ -224,13 +224,13 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
             good_frame_cnt = good_frame_cnt + 1
 
         # DOA Loss with respect to groundtruth
-        doa_frame_gt_x = gt[frame_cnt][:nb_sed][sed_frame == 1]
-        doa_frame_gt_y = gt[frame_cnt][nb_sed:2*nb_sed][sed_frame == 1]
-        doa_frame_gt_z = gt[frame_cnt][2*nb_sed:][sed_frame == 1]
+        doa_frame_gt_x = gt_doa[frame_cnt][:nb_sed][sed_frame == 1]
+        doa_frame_gt_y = gt_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame == 1]
+        doa_frame_gt_z = gt_doa[frame_cnt][2 * nb_sed:][sed_frame == 1]
 
-        doa_frame_pred_x = pred[frame_cnt][:nb_sed][sed_frame == 1]
-        doa_frame_pred_y = pred[frame_cnt][nb_sed:2*nb_sed][sed_frame == 1]
-        doa_frame_pred_z = pred[frame_cnt][2*nb_sed:][sed_frame == 1]
+        doa_frame_pred_x = pred_doa[frame_cnt][:nb_sed][sed_frame == 1]
+        doa_frame_pred_y = pred_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame == 1]
+        doa_frame_pred_z = pred_doa[frame_cnt][2 * nb_sed:][sed_frame == 1]
 
         for cnt in range(nb_src_gt_list[frame_cnt]):
             doa_loss_gt += np.sqrt(
@@ -242,13 +242,13 @@ def compute_doa_scores_regr_xyz(pred, gt, pred_sed, gt_sed):
 
         # DOA Loss with respect to predicted confidence
         sed_frame_pred = pred_sed[frame_cnt]
-        doa_frame_gt_x = gt[frame_cnt][:nb_sed][sed_frame_pred == 1]
-        doa_frame_gt_y = gt[frame_cnt][nb_sed:2*nb_sed][sed_frame_pred == 1]
-        doa_frame_gt_z = gt[frame_cnt][2*nb_sed:][sed_frame_pred == 1]
+        doa_frame_gt_x = gt_doa[frame_cnt][:nb_sed][sed_frame_pred == 1]
+        doa_frame_gt_y = gt_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame_pred == 1]
+        doa_frame_gt_z = gt_doa[frame_cnt][2 * nb_sed:][sed_frame_pred == 1]
 
-        doa_frame_pred_x = pred[frame_cnt][:nb_sed][sed_frame_pred == 1]
-        doa_frame_pred_y = pred[frame_cnt][nb_sed:2*nb_sed][sed_frame_pred == 1]
-        doa_frame_pred_z = pred[frame_cnt][2*nb_sed:][sed_frame_pred == 1]
+        doa_frame_pred_x = pred_doa[frame_cnt][:nb_sed][sed_frame_pred == 1]
+        doa_frame_pred_y = pred_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame_pred == 1]
+        doa_frame_pred_z = pred_doa[frame_cnt][2 * nb_sed:][sed_frame_pred == 1]
 
         for cnt in range(nb_src_pred_list[frame_cnt]):
             doa_loss_pred += np.sqrt(
