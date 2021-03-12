@@ -23,7 +23,7 @@ class Identity:
         return x
 
 def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data_in=(),
-                   input_data_format='channels_first', spatial_dropout_rate=0.5):
+                   input_data_format='channels_last', spatial_dropout_rate=0.5):
     print(f'recurrent_type {recurrent_type}')
     print(f"temporal block input shape {K.int_shape(inp)}")
 
@@ -83,6 +83,7 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
             inp = Reshape((num_frames, -1))(inp)
             print(f"K.int_shape(inp) {K.int_shape(inp)}")
 
+
         layer_input = inp
         for idx, dil_rate in enumerate(d):
             spec_tcn = ConvGeneric1D(filters=nb_tcn_filters_dilated, kernel_size=3, padding='same', dilation_rate=dil_rate,
@@ -103,7 +104,7 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
             res_output = keras.layers.Add()([layer_input, skip_out])
             layer_input = res_output
 
-        print(f"K.int_shape(res_output) {K.int_shape(res_output)}")
+        # print(f"K.int_shape(res_output) {K.int_shape(res_output)}")
 
         # Residual blocks sum
         h = keras.layers.Add()(skip_outputs)
@@ -162,7 +163,7 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     spec_start = Input(shape=(data_in[-3], data_in[-2], data_in[-1]))
 
     ##
-    spatial_dropout = params['spatial_dropout']
+    spatial_dropout = params['spatial_dropout_rate']
     recurrent_type = params['recurrent_type']
 
     print(f"K.int_shape(spec_start) {K.int_shape(spec_start)}")
@@ -182,6 +183,7 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
 
     model = Model(inputs=spec_start, outputs=[sed, doa])
     model.compile(optimizer=Adam(), loss=['binary_crossentropy', 'mse'], loss_weights=weights)
+    # run_eagerly=True
     model.summary()
     return model
 

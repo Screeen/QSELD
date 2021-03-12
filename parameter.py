@@ -22,7 +22,7 @@ def get_params(argv):
         load_only_one_file=False,
 
         # DNN Model parameters
-        sequence_length=512,        # Feature sequence length
+        sequence_length=128,        # Feature sequence length
         batch_size=4,               # Batch size (default 16)
         dropout_rate=0.0,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=64,           # Number of CNN nodes, constant for each layer
@@ -35,8 +35,8 @@ def get_params(argv):
 
         # TCN
         data_format='channels_last',
-        spatial_dropout=0.5,
-        recurrent_type='GRU',
+        spatial_dropout_rate=0.5,
+        recurrent_type='TCN',
         use_quaternions=False,
 
         # Not important
@@ -61,7 +61,7 @@ def get_params(argv):
     elif argv == '888':
         print("OVERFIT MODE\n")
         params['quick_test'] = True
-        params['nb_epochs'] = 500
+        params['nb_epochs'] = 250
         params['load_only_one_file'] = True
         params['spatial_dropout_rate'] = 0
         params['dropout_rate'] = 0

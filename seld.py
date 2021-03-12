@@ -100,7 +100,7 @@ def main(argv):
 
     job_id = 1 if len(argv) < 2 else argv[1]
 
-    model_dir = 'models/'
+    model_dir = os.path.join(os.pardir, 'models')
     utils.create_folder(model_dir)
     unique_name = '{}_ov{}_train{}_val{}_{}{}_3d{}_{}'.format(
         params['dataset'], params['overlap'], params['train_split'], params['val_split'],
@@ -108,7 +108,8 @@ def main(argv):
         int(params['cnn_3d']), job_id
     )
 
-    log_dir = os.path.join(model_dir, unique_name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    dnn_type = 'QTCN' if params['use_quaternions'] else params['recurrent_type']
+    log_dir = os.path.join(model_dir, unique_name, "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")]))
     utils.create_folder(log_dir)
     print("unique_name: {}\n".format(unique_name))
     print("log_dir: {}\n".format(log_dir))
@@ -184,13 +185,13 @@ def main(argv):
 
     for epoch_cnt in range(nb_epoch):
         start = time.time()
-        hist = model.fit_generator(
-            generator=data_gen_train.generate(),
+        hist = model.fit(
+            x=data_gen_train.generate(),
             steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
             validation_data=data_gen_test.generate(),
             validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             epochs=1,
-            verbose=1
+            verbose=1,
             # callbacks=[MyCustomCallback]
         )
 
@@ -198,11 +199,12 @@ def main(argv):
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
         if params['load_only_one_file']:
+            print(f"epoch {epoch_cnt}")
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
-            pred = model.predict_generator(
-                generator=data_gen_test.generate(),
+            pred = model.predict(
+                x=data_gen_test.generate(),
                 steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
                 verbose=2
             )
