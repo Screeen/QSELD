@@ -2,6 +2,11 @@
 # A wrapper script that trains the SELDnet. The training stops when the SELD error (check paper) stops improving.
 #
 
+# How to Force Keras to use CPU to Run Script?
+# import os
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
 import os
 import sys
 import numpy as np
@@ -11,8 +16,11 @@ import evaluation_metrics
 import keras_model
 import parameter
 import utils
+import keras.utils
 import time
-from IPython import embed
+import datetime
+
+from keras.models import load_model
 plot.switch_backend('agg')
 
 
@@ -60,6 +68,8 @@ def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _epoch_m
     plot.savefig(fig_name)
     plot.close()
 
+import gc
+import keras.backend as K
 
 def main(argv):
     """
@@ -81,6 +91,7 @@ def main(argv):
         print('Using default inputs for now')
         print('-------------------------------------------------------------------------------------------------------')
         print('\n\n')
+
     # use parameter set defined by user
     task_id = '1' if len(argv) < 3 else argv[-1]
     params = parameter.get_params(task_id)
@@ -94,21 +105,24 @@ def main(argv):
         params['mode'], params['weakness'],
         int(params['cnn_3d']), job_id
     )
-    unique_name = os.path.join(model_dir, unique_name)
+    # unique_name = os.path.join(model_dir, unique_name)
+    log_dir = os.path.join(model_dir, unique_name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    utils.create_folder(log_dir)
     print("unique_name: {}\n".format(unique_name))
+    print("log_dir: {}\n".format(log_dir))
 
     data_gen_train = cls_data_generator.DataGenerator(
         dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'], nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only']
+        azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file']
     )
 
     data_gen_test = cls_data_generator.DataGenerator(
         dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'], nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], shuffle=False
+        azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file']
     )
 
     data_in, data_out = data_gen_train.get_data_sizes()
@@ -139,6 +153,20 @@ def main(argv):
                                   nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
                                   rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
                                   classification_mode=params['mode'], weights=params['loss_weights'])
+
+    # model_path = os.path.join(log_dir, 'model')
+    # if os.path.exists(model_path):
+    #     print(f"Loading pretrained model from {model_path}")
+    #     del model
+    #     model = load_model(model_path)
+    #
+    #     predict_single_batch(model, data_gen_train)
+
+    # predict_single_batch(model, data_gen_train)
+
+    dot_img_file = os.path.join(log_dir, 'model_plot.png')
+    keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+
     best_metric = 99999
     conf_mat = None
     best_conf_mat = None
@@ -159,7 +187,9 @@ def main(argv):
             validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             epochs=1,
             verbose=0
+            # callbacks=[MyCustomCallback]
         )
+
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
@@ -186,14 +216,15 @@ def main(argv):
                 2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
                 1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
             )
-        plot_functions(unique_name, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
+        plot_functions(log_dir, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
 
         patience_cnt += 1
-        if epoch_metric_loss[epoch_cnt] < best_metric:
+        if epoch_cnt % 10 == 0:
+        # if epoch_metric_loss[epoch_cnt] < best_metric:
             best_metric = epoch_metric_loss[epoch_cnt]
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
-            model.save('{}_model.h5'.format(unique_name))
+            # model.save(model_path)
             patience_cnt = 0
 
         print(
@@ -211,6 +242,9 @@ def main(argv):
         if patience_cnt > params['patience']:
             break
 
+        K.clear_session()
+        gc.collect()
+
     print('best_conf_mat : {}'.format(best_conf_mat))
     print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
     print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
@@ -218,6 +252,32 @@ def main(argv):
         doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
     print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
     print('unique_name: {} '.format(unique_name))
+
+    predict_single_batch(model, data_gen_train)
+
+
+def predict_single_batch(model, data_gen_train):
+    batch = next(data_gen_train.generate())
+    pred = model.predict(
+        x=batch[0],
+        steps=1,
+        verbose=2
+    )
+
+    np.set_printoptions(precision=2, suppress=True, floatmode='fixed')
+    for batch_idx in (0, 1, 2):
+        for temporal_idx in (100, 101, 102):
+            print()
+            print(f"batch idx {batch_idx}")
+            gt_sed = batch[1][0][batch_idx][temporal_idx]
+            gt_doa = batch[1][1][batch_idx][temporal_idx]
+            pred_sed = pred[0][batch_idx][temporal_idx]
+            pred_doa = pred[1][batch_idx][temporal_idx]
+
+            print(f"pred_sed {pred_sed}")
+            print(f"gt_sed {gt_sed}")
+            print(f"pred_doa {pred_doa}")
+            print(f"gt_doa {gt_doa}")
 
 
 if __name__ == "__main__":
