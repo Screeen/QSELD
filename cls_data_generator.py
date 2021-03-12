@@ -14,7 +14,7 @@ class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False
+            azi_only=False, load_only_one_file=False
     ):
         self._datagen_mode = datagen_mode
         self._classifier_mode = classifier_mode
@@ -27,6 +27,7 @@ class DataGenerator(object):
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only
+        self._load_only_one_file = load_only_one_file
 
         self._filenames_list = list()
         self._nb_frames_file = None     # Assuming number of frames in feat files are the same
@@ -79,7 +80,12 @@ class DataGenerator(object):
         return self._nb_total_batches
 
     def _get_label_filenames_sizes(self):
-        for filename in os.listdir(self._label_dir):
+        file_list = os.listdir(self._label_dir)
+        if len(file_list) == 0:
+            raise FileNotFoundError
+        if self._load_only_one_file:
+            file_list = [file_list[0]]
+        for filename in file_list:
             # if self._datagen_mode in filename:
             self._filenames_list.append(filename)
 

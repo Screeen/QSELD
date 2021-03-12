@@ -8,8 +8,8 @@ def get_params(argv):
     print("SET: {}".format(argv))
     # ########### default parameters ##############
     params = dict(
-        quick_test=True,    # To do quick test. Trains/test on small subset of dataset
-        azi_only=True,      # Estimate Azimuth only
+        quick_test=False,    # To do quick test. Trains/test on small subset of dataset
+        azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
         dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
@@ -19,6 +19,7 @@ def get_params(argv):
         val_split=2,
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
+        load_only_one_file=False,
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length
@@ -31,6 +32,8 @@ def get_params(argv):
         loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=1000,             # Train for maximum epochs
+
+        # TCN
 
         # Not important
         mode='regr',        # Only regression ('regr') supported as of now
@@ -48,7 +51,8 @@ def get_params(argv):
     elif argv == '999':
         print("QUICK TEST MODE\n")
         params['quick_test'] = True
-        params['nb_epochs'] = 10
+        params['nb_epochs'] = 500
+        params['load_only_one_file'] = True
 
     # Different datasets
     elif argv == '2':  # anechoic simulated Ambisonic data set
