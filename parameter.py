@@ -35,6 +35,9 @@ def get_params(argv):
 
         # TCN
         data_format='channels_last',
+        spatial_dropout=0.5,
+        recurrent_type='GRU',
+        use_quaternions=False,
 
         # Not important
         mode='regr',        # Only regression ('regr') supported as of now
@@ -58,8 +61,10 @@ def get_params(argv):
     elif argv == '888':
         print("OVERFIT MODE\n")
         params['quick_test'] = True
-        params['nb_epochs'] = 100
+        params['nb_epochs'] = 500
         params['load_only_one_file'] = True
+        params['spatial_dropout_rate'] = 0
+        params['dropout_rate'] = 0
 
     # Different datasets
     elif argv == '2':  # anechoic simulated Ambisonic data set

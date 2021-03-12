@@ -151,11 +151,14 @@ def main(argv):
         )
     )
 
-    model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
-                                  nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
-                                  rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                  classification_mode=params['mode'], weights=params['loss_weights'],
-                                  data_format=params['data_format'])
+    if params['use_quaternions']:
+        model = keras_model.get_model_quaternion(inp_shape=data_in, out_shape=data_out, params=params)
+    else:
+        model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
+                                      nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
+                                      rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
+                                      weights=params['loss_weights'], data_format=params['data_format'],
+                                      params=params)
 
     model_path = os.path.join(log_dir, 'model')
     if os.path.exists(model_path):
@@ -187,73 +190,81 @@ def main(argv):
             validation_data=data_gen_test.generate(),
             validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             epochs=1,
-            verbose=0
+            verbose=1
             # callbacks=[MyCustomCallback]
         )
 
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
-        pred = model.predict_generator(
-            generator=data_gen_test.generate(),
-            steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
-            verbose=2
-        )
-        if params['mode'] == 'regr':
-            sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
-            doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
-
-            sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
-            if params['azi_only']:
-                doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
-                                                                                                 sed_pred, sed_gt)
-            else:
-                doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
-                                                                                                  sed_pred, sed_gt)
-
-            epoch_metric_loss[epoch_cnt] = np.mean([
-                sed_loss[epoch_cnt, 0],
-                1-sed_loss[epoch_cnt, 1],
-                2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
-                1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
+        if params['load_only_one_file']:
+            plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
+                           epoch_metric_loss)
+        else:
+            pred = model.predict_generator(
+                generator=data_gen_test.generate(),
+                steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+                verbose=2
             )
-        plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
+            if params['mode'] == 'regr':
+                sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
+                doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
-        patience_cnt += 1
-        if (epoch_metric_loss[epoch_cnt] < best_metric and not params['quick_test']) or (epoch_cnt % 10 == 0):
-            best_metric = epoch_metric_loss[epoch_cnt]
-            best_conf_mat = conf_mat
-            best_epoch = epoch_cnt
-            model.save(model_path)
-            patience_cnt = 0
+                sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
+                if params['azi_only']:
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
+                                                                                                     sed_pred, sed_gt)
+                else:
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
+                                                                                                      sed_pred, sed_gt)
 
-        print(
-            'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
-            'F1_overall: %.2f, ER_overall: %.2f, '
-            'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-            'error_metric: %.2f, best_error_metric: %.2f, best_epoch : %d' %
-            (
-                epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
-                sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
-                doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
-                epoch_metric_loss[epoch_cnt], best_metric, best_epoch
+                epoch_metric_loss[epoch_cnt] = np.mean([
+                    sed_loss[epoch_cnt, 0],
+                    1-sed_loss[epoch_cnt, 1],
+                    2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
+                    1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
+                )
+            plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
+
+            patience_cnt += 1
+            if (epoch_metric_loss[epoch_cnt] < best_metric and not params['load_only_one_file']) or (epoch_cnt % 50 == 0):
+                best_metric = epoch_metric_loss[epoch_cnt]
+                best_conf_mat = conf_mat
+                best_epoch = epoch_cnt
+                model.save(model_path)
+                patience_cnt = 0
+
+            print(
+                'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
+                'F1_overall: %.2f, ER_overall: %.2f, '
+                'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
+                'error_metric: %.2f, best_error_metric: %.2f, best_epoch : %d' %
+                (
+                    epoch_cnt, time.time() - start, tr_loss[epoch_cnt], val_loss[epoch_cnt],
+                    sed_loss[epoch_cnt, 1], sed_loss[epoch_cnt, 0],
+                    doa_loss[epoch_cnt, 1], doa_loss[epoch_cnt, 2], doa_loss[epoch_cnt, 5] / float(sed_gt.shape[0]),
+                    epoch_metric_loss[epoch_cnt], best_metric, best_epoch
+                )
             )
-        )
-        if patience_cnt > params['patience']:
-            break
+        
+            if patience_cnt > params['patience']:
+                break
 
         # otherwise RAM use increases after every epoch
         K.clear_session()
         gc.collect()
 
-    print('best_conf_mat : {}'.format(best_conf_mat))
-    print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
-    print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
-    print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
-        doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
-    print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
-    print('unique_name: {} '.format(unique_name))
+    if params['load_only_one_file']:
+        model.save(model_path)
+    else:
+        print('best_conf_mat : {}'.format(best_conf_mat))
+        print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
+        print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
+        print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
+            doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
+        print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
 
+    print('unique_name: {} '.format(unique_name))
     predict_single_batch(model, data_gen_train)
 
 
