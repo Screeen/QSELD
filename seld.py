@@ -19,9 +19,13 @@ import utils
 import keras.utils
 import time
 import datetime
+import gc
+import keras.backend as K
 
 from keras.models import load_model
 plot.switch_backend('agg')
+
+np.set_printoptions(precision=1, suppress=True, floatmode='fixed')
 
 
 def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
@@ -68,8 +72,6 @@ def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _epoch_m
     plot.savefig(fig_name)
     plot.close()
 
-import gc
-import keras.backend as K
 
 def main(argv):
     """
@@ -105,7 +107,7 @@ def main(argv):
         params['mode'], params['weakness'],
         int(params['cnn_3d']), job_id
     )
-    # unique_name = os.path.join(model_dir, unique_name)
+
     log_dir = os.path.join(model_dir, unique_name, datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
     utils.create_folder(log_dir)
     print("unique_name: {}\n".format(unique_name))
@@ -115,14 +117,14 @@ def main(argv):
         dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'], nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file']
+        azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file'], data_format=params['data_format']
     )
 
     data_gen_test = cls_data_generator.DataGenerator(
         dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'], nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file']
+        azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'], data_format=params['data_format']
     )
 
     data_in, data_out = data_gen_train.get_data_sizes()
@@ -152,17 +154,15 @@ def main(argv):
     model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
                                   nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
                                   rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                  classification_mode=params['mode'], weights=params['loss_weights'])
+                                  classification_mode=params['mode'], weights=params['loss_weights'],
+                                  data_format=params['data_format'])
 
-    # model_path = os.path.join(log_dir, 'model')
-    # if os.path.exists(model_path):
-    #     print(f"Loading pretrained model from {model_path}")
-    #     del model
-    #     model = load_model(model_path)
-    #
-    #     predict_single_batch(model, data_gen_train)
-
-    # predict_single_batch(model, data_gen_train)
+    model_path = os.path.join(log_dir, 'model')
+    if os.path.exists(model_path):
+        print(f"Loading pretrained model from {model_path}")
+        del model
+        model = load_model(model_path)
+        predict_single_batch(model, data_gen_train)
 
     dot_img_file = os.path.join(log_dir, 'model_plot.png')
     keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
@@ -178,6 +178,7 @@ def main(argv):
     doa_loss = np.zeros((params['nb_epochs'], 6))
     sed_loss = np.zeros((params['nb_epochs'], 2))
     nb_epoch = params['nb_epochs']
+
     for epoch_cnt in range(nb_epoch):
         start = time.time()
         hist = model.fit_generator(
@@ -216,15 +217,14 @@ def main(argv):
                 2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
                 1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
             )
-        plot_functions(log_dir, tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
+        plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
 
         patience_cnt += 1
-        if epoch_cnt % 10 == 0:
-        # if epoch_metric_loss[epoch_cnt] < best_metric:
+        if (epoch_metric_loss[epoch_cnt] < best_metric and not params['quick_test']) or (epoch_cnt % 10 == 0):
             best_metric = epoch_metric_loss[epoch_cnt]
             best_conf_mat = conf_mat
             best_epoch = epoch_cnt
-            # model.save(model_path)
+            model.save(model_path)
             patience_cnt = 0
 
         print(
@@ -242,6 +242,7 @@ def main(argv):
         if patience_cnt > params['patience']:
             break
 
+        # otherwise RAM use increases after every epoch
         K.clear_session()
         gc.collect()
 
@@ -264,7 +265,6 @@ def predict_single_batch(model, data_gen_train):
         verbose=2
     )
 
-    np.set_printoptions(precision=2, suppress=True, floatmode='fixed')
     for batch_idx in (0, 1, 2):
         for temporal_idx in (100, 101, 102):
             print()

@@ -14,7 +14,7 @@ class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False, load_only_one_file=False
+            azi_only=False, load_only_one_file=False, data_format='channels_first'
     ):
         self._datagen_mode = datagen_mode
         self._classifier_mode = classifier_mode
@@ -28,6 +28,7 @@ class DataGenerator(object):
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only
         self._load_only_one_file = load_only_one_file
+        self._data_format = data_format
 
         self._filenames_list = list()
         self._nb_frames_file = None     # Assuming number of frames in feat files are the same
@@ -69,7 +70,11 @@ class DataGenerator(object):
         )
 
     def get_data_sizes(self):
-        feat_shape = (self._batch_size, self._2_nb_ch, self._seq_len, self._feat_len)
+        if self._data_format == 'channels_first':
+            feat_shape = (self._batch_size, self._2_nb_ch, self._seq_len, self._feat_len)
+        else:
+            feat_shape = (self._batch_size, self._seq_len, self._feat_len, self._2_nb_ch)
+
         label_shape = [
             (self._batch_size, self._seq_len, self._nb_classes),
             (self._batch_size, self._seq_len, self._nb_classes*(2 if self._azi_only else 3))
@@ -138,7 +143,8 @@ class DataGenerator(object):
 
                 # Split to sequences
                 feat = self._split_in_seqs(feat)
-                feat = np.transpose(feat, (0, 3, 1, 2))
+                if self._data_format == 'channels_first':
+                    feat = np.transpose(feat, (0, 3, 1, 2))
                 label = self._split_in_seqs(label)
 
                 if self._azi_only:

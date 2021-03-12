@@ -34,6 +34,7 @@ def get_params(argv):
         nb_epochs=1000,             # Train for maximum epochs
 
         # TCN
+        data_format='channels_last',
 
         # Not important
         mode='regr',        # Only regression ('regr') supported as of now
@@ -51,7 +52,13 @@ def get_params(argv):
     elif argv == '999':
         print("QUICK TEST MODE\n")
         params['quick_test'] = True
-        params['nb_epochs'] = 500
+        params['nb_epochs'] = 2
+        params['load_only_one_file'] = False
+
+    elif argv == '888':
+        print("OVERFIT MODE\n")
+        params['quick_test'] = True
+        params['nb_epochs'] = 100
         params['load_only_one_file'] = True
 
     # Different datasets
