@@ -1,6 +1,3 @@
-# from torch import nn
-# from torch.nn import Module
-from torch.nn.parameter import Parameter
 from keras.layers import Layer
 from tensorflow.python.framework import tensor_shape
 import tensorflow as tf
