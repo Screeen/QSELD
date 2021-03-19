@@ -60,15 +60,10 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
             nb_tcn_filters = nb_tcn_filters // 2
             nb_1x1_filters = nb_1x1_filters // 2
             ConvGeneric1D = QuaternionConv1D
-            BatchNormGeneric = Identity
+            BatchNormGeneric = BatchNormalization
         else:
             ConvGeneric1D = Conv1D
             BatchNormGeneric = BatchNormalization
-
-        num_tcn_blocks = 10
-
-        d = [2 ** exp for exp in range(0, num_tcn_blocks)]  # list of dilation factors
-        skip_outputs = []
 
         if input_data_format == 'channels_first':
             tcn_data_format = 'channels_first'
@@ -83,7 +78,12 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
             inp = Reshape((num_frames, -1))(inp)
             print(f"K.int_shape(inp) {K.int_shape(inp)}")
 
+        num_tcn_blocks = 10
 
+        d = [2 ** exp for exp in range(0, num_tcn_blocks)]  # list of dilation factors
+        d = list(filter(lambda x: x < num_frames, d))  # remove dilation factors larger than input
+
+        skip_outputs = []
         layer_input = inp
         for idx, dil_rate in enumerate(d):
             spec_tcn = ConvGeneric1D(filters=nb_tcn_filters_dilated, kernel_size=3, padding='same', dilation_rate=dil_rate,
