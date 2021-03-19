@@ -182,9 +182,13 @@ class QuaternionConv(Layer):
             channel_axis = -1
 
         if input_shape[channel_axis] is None:
-            raise ValueError('The channel dimension of the inputs '
+            raise ValueError('The input channel dimension '
                              'should be defined. Found `None`.')
 
+        if input_shape[channel_axis] % 4 != 0:
+            raise ValueError('The input channel dimension should be a multiple of four, not {}', input_shape[channel_axis])
+
+        self.filters = int(self.filters)
         input_dim = input_shape[channel_axis] // 4
         # print("input_dim:",input_dim)
         self.kernel_shape = self.kernel_size + (input_dim, 4 * self.filters)
