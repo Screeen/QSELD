@@ -256,8 +256,13 @@ def main(argv):
         K.clear_session()
         gc.collect()
 
+        if params['load_only_one_file'] and hist.history.get('loss')[-1] < 0.01:
+            break
+
     if params['load_only_one_file']:
         model.save(model_path)
+
+
     else:
         print('best_conf_mat : {}'.format(best_conf_mat))
         print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
