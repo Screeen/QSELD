@@ -13,16 +13,15 @@ def get_params(argv):
 
         # Dataset loading parameters
         dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
-        overlap=1,         # maximum number of overlapping sound events [1, 2, 3]
-        # split=1,           # Cross validation split [1, 2, 3]
-        train_split=1,     # Cross validation split [1, 2, 3]
-        val_split=2,
+        overlap=[1, 2],         # maximum number of overlapping sound events [1, 2, 3]
+        train_split=[1, 2],     # Cross validation split [1, 2, 3]
+        val_split=[3],
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
         load_only_one_file=False,
 
         # DNN Model parameters
-        sequence_length=128,        # Feature sequence length
+        sequence_length=512,        # Feature sequence length
         batch_size=4,               # Batch size (default 16)
         dropout_rate=0.0,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=64,           # Number of CNN nodes, constant for each layer
@@ -31,12 +30,13 @@ def get_params(argv):
         fnn_size=[128],             # FNN contents, length of list = number of layers, list value = number of nodes
         loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
-        nb_epochs=1000,             # Train for maximum epochs
+        nb_epochs=250,             # Train for maximum epochs
 
         # TCN
         data_format='channels_last',
         spatial_dropout_rate=0.5,
-        recurrent_type='TCN',
+        nb_tcn_filt=256,
+        recurrent_type='TCN',  # TCN, GRU
         use_quaternions=False,
 
         # Not important
@@ -45,14 +45,17 @@ def get_params(argv):
         cnn_3d=False,       # For future. Not relevant for now
         weakness=0          # For future. Not relevant for now
     )
-    params['patience'] = int(0.1 * params['nb_epochs'])     # Stop training if patience reached
+    params['patience'] = int(0.3 * params['nb_epochs'])     # Stop training if patience reached
 
     # ########### User defined parameters ##############
+    params['use_quaternions'] = True if 'q' in argv else False
+    argv = argv.replace('q', '')
+
     if argv == '1':
         print("USING DEFAULT PARAMETERS\n")
 
     # Quick test
-    elif argv == '999':
+    elif '999' in argv:
         print("QUICK TEST MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 2
