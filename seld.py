@@ -183,6 +183,7 @@ def main(argv):
     sed_loss = np.zeros((params['nb_epochs'], 2))
     nb_epoch = params['nb_epochs']
 
+    K.clear_session()
     for epoch_cnt in range(nb_epoch):
         start = time.time()
         hist = model.fit(
@@ -191,7 +192,7 @@ def main(argv):
             validation_data=data_gen_test.generate(),
             validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
             epochs=1,
-            verbose=1,
+            verbose=2,
             # callbacks=[MyCustomCallback]
         )
 
@@ -248,13 +249,12 @@ def main(argv):
                     epoch_metric_loss[epoch_cnt], best_metric, best_epoch
                 )
             )
-        
+
             if patience_cnt > params['patience']:
                 break
 
-        # otherwise RAM use increases after every epoch
+        # otherwise RAM use increases after every epoch. But is the optimizer state forgotten?
         K.clear_session()
-        gc.collect()
 
         if params['load_only_one_file'] and hist.history.get('loss')[-1] < 0.01:
             break
@@ -271,6 +271,7 @@ def main(argv):
             doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
         print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
 
+    np.save(os.path.join(log_dir, 'training-loss'), [tr_loss, val_loss])
     print('unique_name: {} '.format(unique_name))
     predict_single_batch(model, data_gen_train)
 
