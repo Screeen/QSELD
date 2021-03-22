@@ -1,3 +1,5 @@
 models/*
 __*
 .idea/*
+
+log*.txt
