@@ -18,12 +18,14 @@ from IPython import embed
 from quaternion.qdense import *
 from quaternion.qconv import *
 
+
 class Identity:
     def __call__(self, x, *args, **kwargs):
         return x
 
+
 def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data_in=(),
-                   input_data_format='channels_last', spatial_dropout_rate=0.5):
+                   input_data_format='channels_last', spatial_dropout_rate=0.5, nb_tcn_filt=128):
     print(f'recurrent_type {recurrent_type}')
     print(f"temporal block input shape {K.int_shape(inp)}")
 
@@ -50,15 +52,15 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
 
     elif recurrent_type == 'TCN' or recurrent_type == 'QTCN':
 
-        nb_tcn_filters_dilated = 128
-        # nb_tcn_filters_dilated = 256
+        nb_tcn_filters_dilated = nb_tcn_filt
         nb_tcn_filters = 128
+
         nb_1x1_filters = 128  # FNN contents, number of nodes
 
         if recurrent_type == 'QTCN':
-            nb_tcn_filters_dilated = nb_tcn_filters_dilated // 2
-            nb_tcn_filters = nb_tcn_filters // 2
-            nb_1x1_filters = nb_1x1_filters // 2
+            nb_tcn_filters_dilated = nb_tcn_filters_dilated // 4
+            nb_tcn_filters = nb_tcn_filters // 4
+            nb_1x1_filters = nb_1x1_filters // 4
             ConvGeneric1D = QuaternionConv1D
             BatchNormGeneric = BatchNormalization
         else:
@@ -78,23 +80,30 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
             inp = Reshape((num_frames, -1))(inp)
             print(f"K.int_shape(inp) {K.int_shape(inp)}")
 
+        # num_tcn_blocks = 3
         num_tcn_blocks = 10
 
         d = [2 ** exp for exp in range(0, num_tcn_blocks)]  # list of dilation factors
-        d = list(filter(lambda x: x < num_frames, d))  # remove dilation factors larger than input
+        d = list(filter(lambda x: x <= num_frames, d))  # remove dilation factors larger than input
 
         skip_outputs = []
         layer_input = inp
         for idx, dil_rate in enumerate(d):
-            spec_tcn = ConvGeneric1D(filters=nb_tcn_filters_dilated, kernel_size=3, padding='same', dilation_rate=dil_rate,
-                              data_format=tcn_data_format)(layer_input)
-            spec_tcn = BatchNormGeneric()(spec_tcn)
-            tanh_out = Activation('tanh')(spec_tcn)
-            sigm_out = Activation('sigmoid')(spec_tcn)
+            spec_tcn_left = ConvGeneric1D(filters=nb_tcn_filters_dilated, kernel_size=3, padding='same',
+                                     dilation_rate=dil_rate,
+                                     data_format=tcn_data_format)(layer_input)
+            spec_tcn_left = BatchNormGeneric()(spec_tcn_left)
+            tanh_out = Activation('tanh')(spec_tcn_left)
+            # spec_tcn_right = ConvGeneric1D(filters=nb_tcn_filters_dilated, kernel_size=3, padding='same',
+            #                               dilation_rate=dil_rate,
+            #                               data_format=tcn_data_format)(layer_input)
+            # spec_tcn_right = BatchNormGeneric()(spec_tcn_right)
+            # sigm_out = Activation('sigmoid')(spec_tcn_right)
+            sigm_out = Activation('sigmoid')(spec_tcn_left)
             spec_act = keras.layers.Multiply()([tanh_out, sigm_out])
             spec_act = keras.layers.SpatialDropout1D(rate=spatial_dropout_rate)(spec_act)
             skip_out = ConvGeneric1D(filters=nb_tcn_filters, kernel_size=1, padding='same',
-                              data_format=tcn_data_format)(spec_act)
+                                     data_format=tcn_data_format)(spec_act)
             # assert(K.int_shape(spec_resblock1) == K.int_shape(spec_drop1))
             # print(f"idx {idx}")
             # print(f"K.int_shape(layer_input) {K.int_shape(layer_input)}")
@@ -157,7 +166,6 @@ def output_block(inp, out_shape, dropout=0, fnn_size=[0], dense_type='Dense'):
 
 def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
               rnn_size, fnn_size, weights, params, data_format='channels_first'):
-
     # model definition
     keras.backend.set_image_data_format(data_format)
     spec_start = Input(shape=(data_in[-3], data_in[-2], data_in[-1]))
@@ -165,19 +173,20 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
     ##
     spatial_dropout = params['spatial_dropout_rate']
     recurrent_type = params['recurrent_type']
+    nb_tcn_filt_ = params['nb_tcn_filt']  #num_conv_filters_tcn
 
     print(f"K.int_shape(spec_start) {K.int_shape(spec_start)}")
     spec_cnn = spec_start
-    for i, convCnt in enumerate(pool_size):
+    for i, this_pool_size in enumerate(pool_size):
         spec_cnn = Conv2D(filters=nb_cnn2d_filt, kernel_size=(3, 3), padding='same')(spec_cnn)
         spec_cnn = BatchNormalization()(spec_cnn)
         spec_cnn = Activation('relu')(spec_cnn)
-        spec_cnn = MaxPooling2D(pool_size=(1, pool_size[i]))(spec_cnn)
+        spec_cnn = MaxPooling2D(pool_size=(1, this_pool_size))(spec_cnn)
         spec_cnn = Dropout(dropout_rate)(spec_cnn)
 
     spec_cnn = temporal_block(spec_cnn, num_filters_gru=rnn_size, dropout=dropout_rate,
                               recurrent_type=recurrent_type, data_in=data_in, input_data_format=data_format,
-                              spatial_dropout_rate=spatial_dropout)
+                              spatial_dropout_rate=spatial_dropout, nb_tcn_filt=nb_tcn_filt_)
 
     sed, doa = output_block(spec_cnn, out_shape=data_out, dropout=dropout_rate, fnn_size=fnn_size)
 
@@ -189,12 +198,14 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
 
 
 from quaternion.qconv import *
-def get_model_quaternion(inp_shape, out_shape, params):
 
+
+def get_model_quaternion(inp_shape, out_shape, params):
     inp = Input(shape=(inp_shape[-3], inp_shape[-2], inp_shape[-1]))
     print(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
 
-    nb_cnn2d_filt = params['nb_cnn2d_filt'] // 2
+    nb_cnn2d_filt = params['nb_cnn2d_filt'] // 4
+    nb_tcn_filt_ = params['nb_tcn_filt']
 
     pool_size = params['pool_size']
     dropout_rate = params['dropout_rate']
@@ -206,7 +217,8 @@ def get_model_quaternion(inp_shape, out_shape, params):
     spec_cnn = inp
     for i, convCnt in enumerate(pool_size):
         if i == 0:
-            spec_cnn = QuaternionConv2D(input_shape=inp_shape, filters=nb_cnn2d_filt, kernel_size=(3, 3), padding='same',
+            spec_cnn = QuaternionConv2D(input_shape=inp_shape, filters=nb_cnn2d_filt, kernel_size=(3, 3),
+                                        padding='same',
                                         data_format=data_format)(spec_cnn)
         else:
             spec_cnn = QuaternionConv2D(filters=nb_cnn2d_filt, kernel_size=(3, 3), padding='same',
@@ -218,7 +230,8 @@ def get_model_quaternion(inp_shape, out_shape, params):
         spec_cnn = Dropout(dropout_rate)(spec_cnn)
 
     spec_cnn = temporal_block(spec_cnn, dropout=dropout_rate, input_data_format=data_format,
-                              recurrent_type='QTCN', data_in=inp_shape, spatial_dropout_rate=spatial_do)
+                              recurrent_type='QTCN', data_in=inp_shape, spatial_dropout_rate=spatial_do,
+                              nb_tcn_filt=nb_tcn_filt_)
 
     sed, doa = output_block(spec_cnn, out_shape=out_shape, dropout=dropout_rate, fnn_size=fnn_size,
                             dense_type='QDense')
