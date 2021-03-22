@@ -18,7 +18,7 @@ class FeatureClass:
 
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
-        datasets_dir = '/media/gio/1TB/Documents/Sapienza uniroma/SELDnet/datasets'
+        datasets_dir = '../datasets'
         if dataset == 'ansim':
             self._base_folder = os.path.join(datasets_dir, 'ansim')
         elif dataset == 'resim':
@@ -53,6 +53,9 @@ class FeatureClass:
         self._hop_len = self._nfft//2
         self._dataset = dataset
         self._eps = np.spacing(np.float(1e-16))
+
+        self.feat_formatted_name = 'ov{}_split{}_{}db_nfft{}_'.format(self._ov, self._split, self._db, self._nfft)
+        self.label_formatted_name = 'ov{}_split{}_nfft{}_'.format(self._ov, self._split, self._nfft)
 
         # If circular-array 8 channels else 4 for Ambisonic
         if 'c' in self._dataset:
@@ -453,25 +456,29 @@ class FeatureClass:
     def get_normalized_feat_dir(self, extra=''):
         return os.path.join(
             self._base_folder,
-            'spec_ov{}_split{}_{}db_nfft{}{}_norm'.format(self._ov, self._split, self._db, self._nfft, extra)
+            # 'spec_ov{}_split{}_{}db_nfft{}{}_norm'.format(self._ov, self._split, self._db, self._nfft, extra)
+            'spec_'+self.feat_formatted_name+'{}norm'.format(extra)
         )
 
     def get_unnormalized_feat_dir(self, extra=''):
         return os.path.join(
             self._base_folder,
-            'spec_ov{}_split{}_{}db_nfft{}{}'.format(self._ov, self._split, self._db, self._nfft, extra)
+            # 'spec_ov{}_split{}_{}db_nfft{}{}'.format(self._ov, self._split, self._db, self._nfft, extra)
+            'spec_'+self.feat_formatted_name+'{}'.format(extra)
         )
 
     def get_label_dir(self, mode, weakness, extra=''):
         return os.path.join(
             self._base_folder,
-            'label_ov{}_split{}_nfft{}_{}{}{}'.format(self._ov, self._split, self._nfft, mode, 0 if mode is 'regr' else weakness, extra)
+            'label_'+self.label_formatted_name+'{}{}{}'.format(mode, 0 if mode=='regr' else weakness, extra)
+            # 'label_ov{}_split{}_nfft{}_{}{}{}'.format(self._ov, self._split, self._nfft, mode, 0 if mode is 'regr' else weakness, extra)
         )
 
     def get_normalized_wts_file(self, extra=''):
         return os.path.join(
             self._base_folder,
-            'spec_ov{}_split{}_{}db_nfft{}{}_wts'.format(self._ov, self._split, self._db, self._nfft, extra)
+            'spec_'+self.feat_formatted_name+'{}wts'.format(extra)
+            # 'spec_ov{}_split{}_{}db_nfft{}{}_wts'.format(self._ov, self._split, self._db, self._nfft, extra)
         )
 
     def get_default_azi_ele_regr(self):
