@@ -2,11 +2,9 @@
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
 # os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
-from keras.layers import Layer
 import keras.layers
-import numpy as np
+import keras.layers.convolutional
 from math import prod
-import tensorflow as tf
 from quaternion.qconv import *
 
 
@@ -77,19 +75,25 @@ def main():
 
     input_generators = [np.arange,np.arange,np.arange,np.arange,]
     my_input_shapes = [(1, 4), (1, 8),(1, 4), (1, 8),]
-    output_filters = [1, 1, 2, 2]
+    output_filters = [4]
     num_layers = [1, 1, 1, 1]
 
     for (my_input_shape, input_gen, output_filter, num_layer) in \
             zip(my_input_shapes, input_generators, output_filters, num_layers):
 
+        GenericConv1D = keras.layers.convolutional.Conv1D
+
+        # GenericConv1D = QuaternionConv1D
+        # output_filter = output_filter // 4
+
         x = keras.layers.Input(shape=my_input_shape)
-        q1 = QuaternionConv1D(filters=output_filter, kernel_size=1, use_bias=False,
-                               padding='valid', bias_initializer='zero', kernel_initializer='ones')
+        q1 = GenericConv1D(filters=output_filter, kernel_size=1, use_bias=False,
+                               padding='valid', bias_initializer='zero', kernel_initializer='ones',
+                           data_format='channels_last')
         h = q1(x)
 
         for idx in range(num_layer-1):
-            h = QuaternionConv1D(filters=1, kernel_size=1, use_bias=False, data_format='channels_last',
+            h = GenericConv1D(filters=1, kernel_size=1, use_bias=False, data_format='channels_last',
                                   padding='valid', bias_initializer='zero', kernel_initializer='ones')(h)
 
         out = h

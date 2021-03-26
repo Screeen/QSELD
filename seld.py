@@ -19,7 +19,7 @@ import utils
 import keras.utils
 import time
 import datetime
-import gc
+import keras_model_giusenso
 import keras.backend as K
 
 from keras.models import load_model
@@ -102,11 +102,14 @@ def main(argv):
 
     model_dir = os.path.join(os.pardir, 'models')
     utils.create_folder(model_dir)
-    unique_name = '{}_ov{}_train{}_val{}_{}{}_3d{}_{}'.format(
-        params['dataset'], params['overlap'], params['train_split'], params['val_split'],
-        params['mode'], params['weakness'],
-        int(params['cnn_3d']), job_id
-    )
+    unique_name = '{}_ov{}_train{}_val{}_{}'.format(
+        params['dataset'], params['overlap'], params['train_split'], params['val_split'], job_id)
+
+    # unique_name = '{}_ov{}_train{}_val{}_{}{}_3d{}_{}'.format(
+    #     params['dataset'], params['overlap'], params['train_split'], params['val_split'],
+    #     params['mode'], params['weakness'],
+    #     int(params['cnn_3d']), job_id
+    # )
 
     dnn_type = 'QTCN' if params['use_quaternions'] else params['recurrent_type']
     log_dir = os.path.join(model_dir, unique_name, "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")]))
@@ -153,7 +156,12 @@ def main(argv):
     )
 
     if params['use_quaternions']:
+        assert (params['data_format'] == 'channels_last')
         model = keras_model.get_model_quaternion(inp_shape=data_in, out_shape=data_out, params=params)
+    elif params['use_giusenso']:
+        assert(params['data_format'] == 'channels_first')
+        model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'], params['nb_cnn2d_filt'],
+                                                        params['pool_size'], params['fnn_size'], params['loss_weights'])
     else:
         model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
                                       nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
@@ -191,7 +199,7 @@ def main(argv):
             steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
             validation_data=data_gen_test.generate(),
             validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
-            epochs=1,
+            epochs=params['epochs_per_iteration'],
             verbose=2,
             # callbacks=[MyCustomCallback]
         )

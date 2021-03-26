@@ -40,7 +40,7 @@ class QuaternionConv(Layer):
             the number of quaternion feature maps. It is also the effective number
             of feature maps for each of the real and imaginary parts.
             (i.e. the number of quaternion filters in the convolution)
-            The total effective number of filters is 2 x filters.
+            The total effective number of filters is 4 x filters.
         kernel_size: An integer or tuple/list of n integers, specifying the
             dimensions of the convolution window.
         strides: An integer or tuple/list of n integers,
