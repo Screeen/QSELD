@@ -30,8 +30,8 @@ def get_params(argv):
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=250,             # Train for maximum epochs
 
-        epochs_per_iteration=1,
-
+        epochs_per_iteration=2,
+        doa_objective='masked_mse',
         recurrent_type='tcn_new',  # TCN, GRU
 
         # TCN

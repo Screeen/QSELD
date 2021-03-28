@@ -176,7 +176,8 @@ def main(argv):
     if os.path.exists(model_path):
         print(f"Loading pretrained model from {model_path}")
         del model
-        model = load_model(model_path)
+        model = keras_model.load_seld_model(model_path, )
+        # model = load_model(model_path)
         predict_single_batch(model, data_gen_train)
 
     dot_img_file = os.path.join(log_dir, 'model_plot.png')
@@ -225,6 +226,10 @@ def main(argv):
             if params['mode'] == 'regr':
                 sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
                 doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
+
+                num_classes = sed_pred.shape[-1]
+                if doa_pred.shape[-1] > num_classes*3: # means that we are using masked mse
+                    doa_pred = doa_pred[..., num_classes:]
 
                 sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
                 if params['azi_only']:
