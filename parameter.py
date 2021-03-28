@@ -22,23 +22,23 @@ def get_params(argv):
         sequence_length=512,        # Feature sequence length
         batch_size=4,               # Batch size (default 16)
         dropout_rate=0.0,           # Dropout rate, constant for all layers
-        nb_cnn2d_filt=128,           # Number of CNN nodes, constant for each layer
-        # nb_cnn2d_filt=64,           # Number of CNN nodes, constant for each layer
+        nb_cnn2d_filt=64,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer
         rnn_size=[128, 128],        # RNN contents, length of list = number of layers, list value = number of nodes
         fnn_size=[128],             # FNN contents, length of list = number of layers, list value = number of nodes
         loss_weights=[1., 50.],     # [sed, doa] weight for scaling the DNN outputs
         xyz_def_zero=True,          # Use default DOA Cartesian value x,y,z = 0,0,0
         nb_epochs=250,             # Train for maximum epochs
-        epochs_per_iteration=2,
 
-        recurrent_type='TCN',  # TCN, GRU
+        epochs_per_iteration=1,
+
+        recurrent_type='tcn_new',  # TCN, GRU
 
         # TCN
         data_format='channels_last',
         spatial_dropout_rate=0,
-        nb_tcn_filt=256,
-        nb_tcn_blocks=5,
+        nb_tcn_filt=128,
+        nb_tcn_blocks=10,
         use_quaternions=False,
         use_giusenso=False,
 

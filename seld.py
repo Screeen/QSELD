@@ -39,6 +39,7 @@ def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_te
     print("nb_batch in test: {}".format(nb_batch))
     cnt = 0
     for tmp_feat, tmp_label in _data_gen_test.generate():
+        print(f"{cnt}")
         gt_sed[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[0]
         gt_doa[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[1]
         cnt = cnt + 1
@@ -116,6 +117,8 @@ def main(argv):
     utils.create_folder(log_dir)
     print("unique_name: {}\n".format(unique_name))
     print("log_dir: {}\n".format(log_dir))
+
+
 
     data_gen_train = cls_data_generator.DataGenerator(
         dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'], nfft=params['nfft'],
@@ -212,6 +215,8 @@ def main(argv):
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
+            predict_single_batch(model, data_gen_train)
+
             pred = model.predict(
                 x=data_gen_test.generate(),
                 steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
@@ -269,7 +274,6 @@ def main(argv):
 
     if params['load_only_one_file']:
         model.save(model_path)
-
 
     else:
         print('best_conf_mat : {}'.format(best_conf_mat))
