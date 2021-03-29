@@ -225,11 +225,12 @@ def main(argv):
             )
             if params['mode'] == 'regr':
                 sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
-                doa_pred = evaluation_metrics.reshape_3Dto2D(pred[1])
 
+                doa_pred = pred[1]
                 num_classes = sed_pred.shape[-1]
-                if doa_pred.shape[-1] > num_classes*3: # means that we are using masked mse
+                if doa_pred.shape[-1] > num_classes * 3:  # means that we are using masked mse
                     doa_pred = doa_pred[..., num_classes:]
+                doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
                 sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
                 if params['azi_only']:
