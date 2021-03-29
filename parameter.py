@@ -36,7 +36,7 @@ def get_params(argv):
 
         # TCN
         data_format='channels_last',
-        spatial_dropout_rate=0,
+        spatial_dropout_rate=0.5,
         nb_tcn_filt=128,
         nb_tcn_blocks=10,
         use_quaternions=False,

@@ -114,7 +114,6 @@ def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_d
 def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropout_rate, use_quaternions_,
                        data_in, input_data_format):
 
-
     assert (input_data_format == 'channels_last')
     tcn_data_format = 'channels_last'
     num_frames = data_in[1]
@@ -156,7 +155,7 @@ def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropou
         spec_act = tf.keras.activations.relu(spec_tcn_left, alpha=0.2)
 
         # spatial dropout
-        # spec_act = keras.layers.SpatialDropout1D(rate=spatial_dropout_rate)(spec_act)
+        spec_act = keras.layers.SpatialDropout1D(rate=spatial_dropout_rate)(spec_act)
 
         # 1D convolution
         skip_out = ConvGeneric1D(filters=nb_1x1_filters, kernel_size=(1), padding='same',
