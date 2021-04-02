@@ -4,7 +4,7 @@
 
 This repository contains a SELD-TCN implementation.
 
-![picture](img/img1.PNG)
+![picture](images/img1.PNG)
 
 The SELD-TCN was originally proposed in https://arxiv.org/abs/2003.01609.  
 SELDnet implementation (https://github.com/sharathadavanne/seld-net.git) has been used as a starting point for the development of this network.
