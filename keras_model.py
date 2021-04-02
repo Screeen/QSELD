@@ -7,11 +7,10 @@ from keras.layers import Bidirectional, Conv2D, MaxPooling2D, Input, MaxPooling3
 from keras.layers.core import Dense, Activation, Dropout, Reshape, Permute
 from keras.layers import GRU, GRUCell
 from keras.layers.normalization import BatchNormalization
-from keras.models import Model
+from keras.models import load_model
 from keras.layers.wrappers import TimeDistributed
 from keras.optimizers import Adam
 import keras.backend as K
-from tensorflow.python.keras.models import load_model
 
 from quaternion.qdense import *
 from quaternion.qconv import *
@@ -307,7 +306,7 @@ def get_model(data_in, data_out, dropout_rate, nb_cnn2d_filt, pool_size,
 
 def masked_mse(y_gt, model_out):
     # SED mask: Use only the predicted DOAs when gt SED > 0.5
-    num_classes = 11  #TODO fix this hardcoded value of number of classes
+    num_classes = 11  # TODO fix this hardcoded value of number of classes
     sed_out = y_gt[..., :num_classes] >= 0.5
     sed_out = keras.backend.repeat_elements(sed_out, 3, -1)
     sed_out = keras.backend.cast(sed_out, 'float32')
@@ -315,7 +314,6 @@ def masked_mse(y_gt, model_out):
     # Use the mask to computed mse now. Normalize with the mask weights
     return keras.backend.sqrt(keras.backend.sum(keras.backend.square(
         y_gt - model_out[:, :, num_classes:]) * sed_out))/keras.backend.sum(sed_out)
-
 
 def load_seld_model(model_file, doa_objective):
     if doa_objective is 'mse':

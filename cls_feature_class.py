@@ -1,7 +1,7 @@
 # Contains routines for labels creation, features extraction and normalization
 #
 
-
+from utils import list_to_string
 import os
 import numpy as np
 import scipy.io.wavfile as wav
@@ -34,10 +34,6 @@ class FeatureClass:
         elif dataset == 'mreal':
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_movingdata_foa/')
 
-        # Input directories
-        self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(ov, split, db, wav_extra_name))
-        self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(ov, split, desc_extra_name))
-
         # Output directories
         self._label_dir = None
         self._feat_dir = None
@@ -45,14 +41,24 @@ class FeatureClass:
 
         # Local parameters
         self._mode = None
-        self._ov = ov
-        self._split = split
+        self._ov = list_to_string(ov)
+        self._split = list_to_string(split)
         self._db = db
         self._nfft = nfft
         self._win_len = self._nfft
         self._hop_len = self._nfft//2
         self._dataset = dataset
         self._eps = np.spacing(np.float(1e-16))
+
+        # Input directories
+        self._aud_dir = os.path.join(self._base_folder, 'wav_ov{}_split{}_{}db{}'.format(self._ov,
+                                                                                         self._split, db,
+                                                                                         wav_extra_name))
+        self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(self._ov,
+                                                                                      self._split,
+                                                                                      desc_extra_name))
+        print(f"self._aud_dir {self._aud_dir}")
+        print(f"self._desc_dir {self._desc_dir}")
 
         self.feat_formatted_name = 'ov{}_split{}_{}db_nfft{}_'.format(self._ov, self._split, self._db, self._nfft)
         self.label_formatted_name = 'ov{}_split{}_nfft{}_'.format(self._ov, self._split, self._nfft)

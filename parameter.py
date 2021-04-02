@@ -14,6 +14,7 @@ def get_params(argv):
         overlap=[1, 2],         # maximum number of overlapping sound events [1, 2, 3]
         train_split=[1, 2],     # Cross validation split [1, 2, 3]
         val_split=[3],
+        test_split=[4],
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
         load_only_one_file=False,
@@ -31,7 +32,7 @@ def get_params(argv):
         nb_epochs=250,             # Train for maximum epochs
 
         epochs_per_iteration=2,
-        doa_objective='masked_mse',
+        doa_objective='mse',
         recurrent_type='tcn_new',  # TCN, GRU
 
         # TCN
@@ -73,6 +74,12 @@ def get_params(argv):
         params['load_only_one_file'] = True
         params['spatial_dropout_rate'] = 0
         params['dropout_rate'] = 0
+
+    elif argv == '777':
+        print("Test evaluation\n")
+        params['quick_test'] = True
+        params['nb_epochs'] = 1
+        params['load_only_one_file'] = False
 
     # Different datasets
     elif argv == '2':  # anechoic simulated Ambisonic data set

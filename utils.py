@@ -10,3 +10,7 @@ def create_folder(folder_name):
         os.makedirs(folder_name)
 
 
+def list_to_string(values):
+    return "_".join(str(x) for x in values)
+
+

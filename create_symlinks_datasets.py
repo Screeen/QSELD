@@ -1,4 +1,5 @@
 import os
+from utils import list_to_string
 
 
 def make_list(x):
@@ -26,7 +27,7 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
 
     symlink_dir_path = None
     if label_dirs_filtered:
-        symlink_dir_name = f"{label_or_spec}_ov{ovs}_split{splits}" + suffix
+        symlink_dir_name = f"{label_or_spec}_ov{list_to_string(ovs)}_split{list_to_string(splits)}" + suffix
         symlink_dir_path = os.path.join(base_folder, symlink_dir_name)
         os.makedirs(symlink_dir_path, exist_ok=True)
         print(f"creating {symlink_dir_path}")
