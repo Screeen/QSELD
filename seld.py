@@ -22,7 +22,7 @@ import datetime
 import keras_model_giusenso
 import keras.backend as K
 
-from keras.models import load_model
+from utils import list_to_string
 
 plot.switch_backend('agg')
 
@@ -75,117 +75,41 @@ def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _epoch_m
     plot.close()
 
 
-def main(argv):
-    """
-    Main wrapper for training sound event localization and detection network.
-    
-    :param argv: expects two optional inputs. 
-        first input: job_id - (optional) all the output files will be uniquely represented with this. (default) 1
-        second input: task_id - (optional) To chose the system configuration in parameters.py. 
-                                (default) uses default parameters
-    """
-    if len(argv) != 3:
-        print('\n\n')
-        print('-------------------------------------------------------------------------------------------------------')
-        print('The code expected two inputs')
-        print('\t>> python seld.py <job-id> <task-id>')
-        print('\t\t<job-id> is a unique identifier which is used for output filenames (models, training plots). '
-              'You can use any number or string for this.')
-        print('\t\t<task-id> is used to choose the user-defined parameter set from parameter.py')
-        print('Using default inputs for now')
-        print('-------------------------------------------------------------------------------------------------------')
-        print('\n\n')
-
-    # use parameter set defined by user
-    task_id = '1' if len(argv) < 3 else argv[-1]
-    params = parameter.get_params(task_id)
-
-    job_id = 1 if len(argv) < 2 else argv[1]
-
-    model_dir = os.path.join(os.pardir, 'models')
-    utils.create_folder(model_dir)
-    unique_name = '{}_ov{}_train{}_val{}_{}'.format(
-        params['dataset'], params['overlap'], params['train_split'], params['val_split'], job_id)
-
-    # unique_name = '{}_ov{}_train{}_val{}_{}{}_3d{}_{}'.format(
-    #     params['dataset'], params['overlap'], params['train_split'], params['val_split'],
-    #     params['mode'], params['weakness'],
-    #     int(params['cnn_3d']), job_id
-    # )
-
-    dnn_type = 'QTCN' if params['use_quaternions'] else params['recurrent_type']
-    log_dir = os.path.join(model_dir, unique_name,
-                           "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")]))
-    utils.create_folder(log_dir)
-    print("unique_name: {}\n".format(unique_name))
-    print("log_dir: {}\n".format(log_dir))
-
-    data_gen_train = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'],
-        nfft=params['nfft'],
-        batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-        weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file'], data_format=params['data_format']
+def predict_single_batch(model, data_gen_train):
+    batch = next(data_gen_train.generate())
+    pred = model.predict(
+        x=batch[0],
+        steps=1,
+        verbose=2
     )
 
-    data_gen_test = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
-        nfft=params['nfft'],
-        batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-        weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'],
-        data_format=params['data_format']
-    )
+    for batch_idx in (0, 1, 2):
+        for temporal_idx in (100, 101, 102):
+            print()
+            print(f"batch idx {batch_idx}")
+            gt_sed = batch[1][0][batch_idx][temporal_idx]
+            gt_doa = batch[1][1][batch_idx][temporal_idx]
+            pred_sed = pred[0][batch_idx][temporal_idx]
+            pred_doa = pred[1][batch_idx][temporal_idx]
 
-    data_in, data_out = data_gen_train.get_data_sizes()
-    print(
-        'FEATURES:\n'
-        '\tdata_in: {}\n'
-        '\tdata_out: {}\n'.format(
-            data_in, data_out
-        )
-    )
+            print(f"pred_sed {pred_sed}")
+            print(f"gt_sed {gt_sed}")
+            print(f"pred_doa {pred_doa}")
+            print(f"gt_doa {gt_doa}")
 
-    gt = collect_test_labels(data_gen_test, data_out, params['mode'], params['quick_test'])
+
+def collect_ground_truth(data_gen, params):
+    data_in, data_out = data_gen.get_data_sizes()
+    gt = collect_test_labels(data_gen, data_out, params['mode'], params['quick_test'])
     sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
     doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
-    print(
-        'MODEL:\n'
-        '\tdropout_rate: {}\n'
-        '\tCNN: nb_cnn_filt: {}, pool_size{}\n'
-        '\trnn_size: {}, fnn_size: {}\n'.format(
-            params['dropout_rate'],
-            params['nb_cnn3d_filt'] if params['cnn_3d'] else params['nb_cnn2d_filt'], params['pool_size'],
-            params['rnn_size'], params['fnn_size']
-        )
-    )
+    return sed_gt, doa_gt
 
-    if params['use_quaternions']:
-        assert (params['data_format'] == 'channels_last')
-        model = keras_model.get_model_quaternion(inp_shape=data_in, out_shape=data_out, params=params)
-    elif params['use_giusenso']:
-        assert (params['data_format'] == 'channels_first')
-        model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'],
-                                                        params['nb_cnn2d_filt'],
-                                                        params['pool_size'], params['fnn_size'], params['loss_weights'])
-    else:
-        model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
-                                      nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
-                                      rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                      weights=params['loss_weights'], data_format=params['data_format'],
-                                      params=params)
 
-    model_path = os.path.join(log_dir, 'model')
-    if os.path.exists(model_path):
-        print(f"Loading pretrained model from {model_path}")
-        del model
-        model = keras_model.load_seld_model(model_path, )
-        # model = load_model(model_path)
-        predict_single_batch(model, data_gen_train)
-
-    dot_img_file = os.path.join(log_dir, 'model_plot.png')
-    keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name="unique_name"):
+    print("Train function called")
+    sed_gt, doa_gt = collect_ground_truth(data_gen_val, params)
 
     best_metric = 99999
     conf_mat = None
@@ -198,15 +122,17 @@ def main(argv):
     doa_loss = np.zeros((params['nb_epochs'], 6))
     sed_loss = np.zeros((params['nb_epochs'], 2))
     nb_epoch = params['nb_epochs']
+    model_path = os.path.join(log_dir, 'model')
 
     K.clear_session()
+
     for epoch_cnt in range(nb_epoch):
         start = time.time()
         hist = model.fit(
             x=data_gen_train.generate(),
             steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
-            validation_data=data_gen_test.generate(),
-            validation_steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+            validation_data=data_gen_val.generate(),
+            validation_steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
             epochs=params['epochs_per_iteration'],
             verbose=2,
             # callbacks=[MyCustomCallback]
@@ -220,11 +146,11 @@ def main(argv):
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
-            predict_single_batch(model, data_gen_train)
+            # predict_single_batch(model, data_gen_train)
 
             pred = model.predict(
-                x=data_gen_test.generate(),
-                steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+                x=data_gen_val.generate(),
+                steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
                 verbose=2
             )
             if params['mode'] == 'regr':
@@ -238,13 +164,17 @@ def main(argv):
                 doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
                 sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
-                                                                               data_gen_test.nb_frames_1s())
+                                                                               data_gen_val.nb_frames_1s())
                 if params['azi_only']:
-                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
-                                                                                                     sed_pred, sed_gt)
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred,
+                                                                                                     doa_gt,
+                                                                                                     sed_pred,
+                                                                                                     sed_gt)
                 else:
-                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred, doa_gt,
-                                                                                                      sed_pred, sed_gt)
+                    doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred,
+                                                                                                      doa_gt,
+                                                                                                      sed_pred,
+                                                                                                      sed_gt)
 
                 epoch_metric_loss[epoch_cnt] = np.mean([
                     sed_loss[epoch_cnt, 0],
@@ -252,6 +182,7 @@ def main(argv):
                     2 * np.arcsin(doa_loss[epoch_cnt, 1] / 2.0) / np.pi,
                     1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
                 )
+
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
 
@@ -295,34 +226,219 @@ def main(argv):
         print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
         print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
             doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
-        print('SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
+        print(
+            'SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
 
     np.save(os.path.join(log_dir, 'training-loss'), [tr_loss, val_loss])
     print('unique_name: {} '.format(unique_name))
-    predict_single_batch(model, data_gen_train)
+    # predict_single_batch(model, data_gen_train)
 
 
-def predict_single_batch(model, data_gen_train):
-    batch = next(data_gen_train.generate())
+def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name"):
+    print("EVALUATE function called")
+    sed_gt, doa_gt = collect_ground_truth(data_gen_test, params)
+
+    predict_single_batch(model, data_gen_test)
+
     pred = model.predict(
-        x=batch[0],
-        steps=1,
+        x=data_gen_test.generate(),
+        steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
         verbose=2
     )
 
-    for batch_idx in (0, 1, 2):
-        for temporal_idx in (100, 101, 102):
-            print()
-            print(f"batch idx {batch_idx}")
-            gt_sed = batch[1][0][batch_idx][temporal_idx]
-            gt_doa = batch[1][1][batch_idx][temporal_idx]
-            pred_sed = pred[0][batch_idx][temporal_idx]
-            pred_doa = pred[1][batch_idx][temporal_idx]
+    sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
 
-            print(f"pred_sed {pred_sed}")
-            print(f"gt_sed {gt_sed}")
-            print(f"pred_doa {pred_doa}")
-            print(f"gt_doa {gt_doa}")
+    doa_pred = pred[1]
+    num_classes = sed_pred.shape[-1]
+    num_dims_xyz = 3
+    if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
+        doa_pred = doa_pred[..., num_classes:]
+    doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
+
+    sed_loss = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
+                                                     data_gen_test.nb_frames_1s())
+    if params['azi_only']:
+        doa_loss, conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred,
+                                                                           doa_gt,
+                                                                           sed_pred,
+                                                                           sed_gt)
+    else:
+        doa_loss, conf_mat = evaluation_metrics.compute_doa_scores_regr_xyz(doa_pred,
+                                                                            doa_gt,
+                                                                            sed_pred,
+                                                                            sed_gt)
+
+    epoch_metric_loss = np.mean([
+        sed_loss[0],
+        1 - sed_loss[1],
+        2 * np.arcsin(doa_loss[1] / 2.0) / np.pi,
+        1 - (doa_loss[5] / float(doa_gt.shape[0]))]
+    )
+
+    print(
+        'F1_overall: %.2f, ER_overall: %.2f, '
+        'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
+        'error_metric: %.2f%',
+        (
+            sed_loss[1], sed_loss[0],
+            doa_loss[1], doa_loss[2], doa_loss[5] / float(sed_gt.shape[0]),
+            epoch_metric_loss
+        )
+    )
+
+    print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
+        doa_loss[1], doa_loss[2], doa_loss[5] / float(sed_gt.shape[0])))
+    print(
+        'SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[1], sed_loss[0]))
+
+    print('unique_name: {} '.format(unique_name))
+    predict_single_batch(model, data_gen_test)
+
+
+def main(argv):
+    """
+    Main wrapper for training sound event localization and detection network.
+    
+    :param argv: expects two optional inputs. 
+        first input: job_id - (optional) all the output files will be uniquely represented with this. (default) 1
+        second input: task_id - (optional) To chose the system configuration in parameters.py. 
+                                (default) uses default parameters
+    """
+    if len(argv) != 3:
+        print('\n\n')
+        print('-------------------------------------------------------------------------------------------------------')
+        print('The code expected two inputs')
+        print('\t>> python seld.py <job-id> <task-id>')
+        print('\t\t<job-id> is a unique identifier which is used for output filenames (models, training plots). '
+              'You can use any number or string for this.')
+        print('\t\t<task-id> is used to choose the user-defined parameter set from parameter.py')
+        print('Using default inputs for now')
+        print('-------------------------------------------------------------------------------------------------------')
+        print('\n\n')
+
+    job_id = 1 if len(argv) < 2 else argv[1]
+
+    # use parameter set defined by user
+    task_id = '1' if len(argv) < 3 else argv[2]
+    params = parameter.get_params(task_id)
+
+    isTraining = True if len(argv) < 4 else (True if argv[3] == 'train' else False)
+    print(f"isTraining {isTraining}")
+
+    log_dir_name = None if len(argv) < 5 else argv[4]
+    if not log_dir_name and not isTraining:
+        raise ValueError("Specify log_dir if evaluation mode")
+
+    model_dir = os.path.join(os.pardir, 'models')
+    utils.create_folder(model_dir)
+
+    unique_name = '{}_ov{}_train{}_val{}_{}'.format(
+        params['dataset'], list_to_string(params['overlap']), list_to_string(params['train_split']),
+        list_to_string(params['val_split']),
+        job_id)
+
+    dnn_type = 'QTCN' if params['use_quaternions'] else params['recurrent_type']
+    if not log_dir_name:
+        log_dir_name = "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")])
+
+    log_dir = os.path.join(model_dir, unique_name, log_dir_name)
+
+    print(f"log_dir {log_dir}")
+    utils.create_folder(log_dir)
+    print("unique_name: {}\n".format(unique_name))
+
+    data_gen_train = None
+    data_gen_val = None
+    data_gen_test = None
+    if isTraining:
+        data_gen_train = cls_data_generator.DataGenerator(
+            dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'],
+            nfft=params['nfft'],
+            batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
+            weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
+            xyz_def_zero=params['xyz_def_zero'],
+            azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file'],
+            data_format=params['data_format']
+        )
+
+        data_gen_val = cls_data_generator.DataGenerator(
+            dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
+            nfft=params['nfft'],
+            batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
+            weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
+            xyz_def_zero=params['xyz_def_zero'],
+            azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'],
+            data_format=params['data_format']
+        )
+    else:
+        data_gen_test = cls_data_generator.DataGenerator(
+            dataset=params['dataset'], ov=params['overlap'], split=params['test_split'], db=params['db'],
+            nfft=params['nfft'],
+            batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
+            weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
+            xyz_def_zero=params['xyz_def_zero'],
+            azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'],
+            data_format=params['data_format']
+        )
+
+    data_gen_for_shapes = data_gen_train if isTraining else data_gen_test
+    data_in, data_out = data_gen_for_shapes.get_data_sizes()
+    print(
+        'FEATURES:\n'
+        '\tdata_in: {}\n'
+        '\tdata_out: {}\n'.format(
+            data_in, data_out
+        )
+    )
+
+    # data_gen_for_evaluation = data_gen_val if isTraining else data_gen_test
+    # gt = collect_test_labels(data_gen_for_evaluation, data_out, params['mode'], params['quick_test'])
+    # sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
+    # doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
+
+    print(
+        'MODEL:\n'
+        '\tdropout_rate: {}\n'
+        '\tCNN: nb_cnn_filt: {}, pool_size{}\n'
+        '\trnn_size: {}, fnn_size: {}\n'.format(
+            params['dropout_rate'],
+            params['nb_cnn3d_filt'] if params['cnn_3d'] else params['nb_cnn2d_filt'], params['pool_size'],
+            params['rnn_size'], params['fnn_size']
+        )
+    )
+
+    if params['use_quaternions']:
+        assert (params['data_format'] == 'channels_last')
+        model = keras_model.get_model_quaternion(inp_shape=data_in, out_shape=data_out, params=params)
+    elif params['use_giusenso']:
+        assert (params['data_format'] == 'channels_first')
+        model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'],
+                                                        params['nb_cnn2d_filt'],
+                                                        params['pool_size'], params['fnn_size'], params['loss_weights'])
+    else:
+        model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
+                                      nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
+                                      rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
+                                      weights=params['loss_weights'], data_format=params['data_format'],
+                                      params=params)
+
+    model_path = os.path.join(log_dir, 'model')
+    if os.path.exists(model_path):
+        print(f"Loading pretrained model from {model_path}")
+        del model
+        model = keras_model.load_seld_model(os.path.abspath(model_path), params['doa_objective'])
+        print(f"Finished loading")
+    else:
+        if not isTraining:
+            raise FileNotFoundError(f"test mode but model was not found at {os.path.abspath(model_path)}")
+
+    dot_img_file = os.path.join(log_dir, 'model_plot.png')
+    keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+
+    if isTraining:
+        train(model, data_gen_train, data_gen_val, params, log_dir=log_dir, unique_name=unique_name)
+    else:
+        evaluate(model, data_gen_test, params, log_dir=log_dir, unique_name=unique_name)
 
 
 if __name__ == "__main__":
