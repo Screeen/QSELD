@@ -230,7 +230,8 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
             'SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
 
     np.save(os.path.join(log_dir, 'training-loss'), [tr_loss, val_loss])
-    print('unique_name: {} '.format(unique_name))
+    print(f'unique_name: {unique_name}')
+    print(f'log_dir: {log_dir}')
     # predict_single_batch(model, data_gen_train)
 
 
@@ -278,7 +279,7 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
     print(
         'F1_overall: %.2f, ER_overall: %.2f, '
         'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
-        'error_metric: %.2f%',
+        'error_metric: %.2f' %
         (
             sed_loss[1], sed_loss[0],
             doa_loss[1], doa_loss[2], doa_loss[5] / float(sed_gt.shape[0]),
@@ -292,7 +293,6 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
         'SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[1], sed_loss[0]))
 
     print('unique_name: {} '.format(unique_name))
-    predict_single_batch(model, data_gen_test)
 
 
 def main(argv):
@@ -409,15 +409,15 @@ def main(argv):
 
     if params['use_quaternions']:
         assert (params['data_format'] == 'channels_last')
-        model = keras_model.get_model_quaternion(inp_shape=data_in, out_shape=data_out, params=params)
-    elif params['use_giusenso']:
+
+    if params['use_giusenso']:
         assert (params['data_format'] == 'channels_first')
         model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'],
                                                         params['nb_cnn2d_filt'],
                                                         params['pool_size'], params['fnn_size'], params['loss_weights'])
     else:
-        model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
-                                      nb_cnn2d_filt=params['nb_cnn2d_filt'], pool_size=params['pool_size'],
+        model = keras_model.get_model(input_shape=data_in, output_shape=data_out, dropout_rate=params['dropout_rate'],
+                                      pool_size=params['pool_size'],
                                       rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
                                       weights=params['loss_weights'], data_format=params['data_format'],
                                       params=params)

@@ -32,7 +32,7 @@ def get_params(argv):
         nb_epochs=250,             # Train for maximum epochs
 
         epochs_per_iteration=2,
-        doa_objective='mse',
+        doa_objective='masked_mse',
         recurrent_type='tcn_new',  # TCN, GRU
 
         # TCN
