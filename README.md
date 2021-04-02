@@ -1,3 +1,18 @@
+-----------------------------------
+
+# SELD-TCN: Sound Event Localization and Detection via Temporal Convolutional Networks
+
+This repository contains a SELD-TCN implementation.
+
+![picture](img/img1.PNG)
+
+The SELD-TCN was originally proposed in https://arxiv.org/abs/2003.01609.  
+SELDnet implementation (https://github.com/sharathadavanne/seld-net.git) has been used as a starting point for the development of this network.
+
+Dataset:
+ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703)
+
+--------------------------------
 
 # Sound event localization, detection, and tracking of multiple overlapping stationary and moving sources using convolutional recurrent neural network (SELDnet)
 
