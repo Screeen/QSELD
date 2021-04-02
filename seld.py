@@ -23,6 +23,7 @@ import keras_model_giusenso
 import keras.backend as K
 
 from keras.models import load_model
+
 plot.switch_backend('agg')
 
 np.set_printoptions(precision=1, suppress=True, floatmode='fixed')
@@ -113,25 +114,27 @@ def main(argv):
     # )
 
     dnn_type = 'QTCN' if params['use_quaternions'] else params['recurrent_type']
-    log_dir = os.path.join(model_dir, unique_name, "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")]))
+    log_dir = os.path.join(model_dir, unique_name,
+                           "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")]))
     utils.create_folder(log_dir)
     print("unique_name: {}\n".format(unique_name))
     print("log_dir: {}\n".format(log_dir))
 
-
-
     data_gen_train = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'], nfft=params['nfft'],
+        dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'],
+        nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
         azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file'], data_format=params['data_format']
     )
 
     data_gen_test = cls_data_generator.DataGenerator(
-        dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'], nfft=params['nfft'],
+        dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
+        nfft=params['nfft'],
         batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
         weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'], xyz_def_zero=params['xyz_def_zero'],
-        azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'], data_format=params['data_format']
+        azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'],
+        data_format=params['data_format']
     )
 
     data_in, data_out = data_gen_train.get_data_sizes()
@@ -162,8 +165,9 @@ def main(argv):
         assert (params['data_format'] == 'channels_last')
         model = keras_model.get_model_quaternion(inp_shape=data_in, out_shape=data_out, params=params)
     elif params['use_giusenso']:
-        assert(params['data_format'] == 'channels_first')
-        model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'], params['nb_cnn2d_filt'],
+        assert (params['data_format'] == 'channels_first')
+        model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'],
+                                                        params['nb_cnn2d_filt'],
                                                         params['pool_size'], params['fnn_size'], params['loss_weights'])
     else:
         model = keras_model.get_model(data_in=data_in, data_out=data_out, dropout_rate=params['dropout_rate'],
@@ -228,11 +232,13 @@ def main(argv):
 
                 doa_pred = pred[1]
                 num_classes = sed_pred.shape[-1]
-                if doa_pred.shape[-1] > num_classes * 3:  # means that we are using masked mse
+                num_dims_xyz = 3
+                if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
                     doa_pred = doa_pred[..., num_classes:]
                 doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
-                sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt, data_gen_test.nb_frames_1s())
+                sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
+                                                                               data_gen_test.nb_frames_1s())
                 if params['azi_only']:
                     doa_loss[epoch_cnt, :], conf_mat = evaluation_metrics.compute_doa_scores_regr_xy(doa_pred, doa_gt,
                                                                                                      sed_pred, sed_gt)
@@ -242,14 +248,16 @@ def main(argv):
 
                 epoch_metric_loss[epoch_cnt] = np.mean([
                     sed_loss[epoch_cnt, 0],
-                    1-sed_loss[epoch_cnt, 1],
-                    2*np.arcsin(doa_loss[epoch_cnt, 1]/2.0)/np.pi,
+                    1 - sed_loss[epoch_cnt, 1],
+                    2 * np.arcsin(doa_loss[epoch_cnt, 1] / 2.0) / np.pi,
                     1 - (doa_loss[epoch_cnt, 5] / float(doa_gt.shape[0]))]
                 )
-            plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss, epoch_metric_loss)
+            plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
+                           epoch_metric_loss)
 
             patience_cnt += 1
-            if (epoch_metric_loss[epoch_cnt] < best_metric and not params['load_only_one_file']) or (epoch_cnt % 50 == 0):
+            if (epoch_metric_loss[epoch_cnt] < best_metric and not params['load_only_one_file']) or (
+                    epoch_cnt % 50 == 0):
                 best_metric = epoch_metric_loss[epoch_cnt]
                 best_conf_mat = conf_mat
                 best_epoch = epoch_cnt

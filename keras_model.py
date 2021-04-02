@@ -35,15 +35,6 @@ def temporal_block_gru(inp, num_filters_gru=0, dropout=0, data_in=(), input_data
 
 def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropout_rate, use_quaternions_,
                             data_in, input_data_format):
-    if use_quaternions_:
-        nb_tcn_filters_dilated = nb_tcn_filters_dilated // 4
-        nb_1x1_filters = nb_1x1_filters // 4
-        nb_1x1_filters_final = nb_1x1_filters_final // 4
-        ConvGeneric1D = QuaternionConv1D
-        BatchNormGeneric = BatchNormalization
-    else:
-        ConvGeneric1D = Conv1D
-        BatchNormGeneric = BatchNormalization
 
     assert (input_data_format == 'channels_last')
     tcn_data_format = 'channels_last'
@@ -60,6 +51,16 @@ def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_d
     nb_tcn_filters_dilated = nb_tcn_filt_dilated_
     nb_1x1_filters = 128
     nb_1x1_filters_final = 128  # FNN contents, number of nodes
+
+    if use_quaternions_:
+        nb_tcn_filters_dilated = nb_tcn_filters_dilated // 4
+        nb_1x1_filters = nb_1x1_filters // 4
+        nb_1x1_filters_final = nb_1x1_filters_final // 4
+        ConvGeneric1D = QuaternionConv1D
+        BatchNormGeneric = BatchNormalization
+    else:
+        ConvGeneric1D = Conv1D
+        BatchNormGeneric = BatchNormalization
 
     skip_outputs = []
     layer_input = inp
