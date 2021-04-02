@@ -1,3 +1,42 @@
+# April 2021 - Running ANSIM experiments
+
+1. Download ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703)
+
+2. For the chosen dataset (ansim or resim or ..), overlap (1, 2 or 3) and split (1, 2 or 3), download the respective zip file. This contains both the audio files and the respective metadata. Unzip the files under the same 'base_folder/', ie, if you are downloading overlap 1 and split 1 of the ansim dataset, then the 'base_folder/' should have two folders - 'wav_ov1_split1_30db/' and 'desc_ov1_split1/' after unzipping.
+
+3. Clone this repository
+
+4. Fundamental requirements are
+
+```
+Keras==2.4.3
+matplotlib==3.3.4
+numpy==1.19.2
+scikit-learn==0.24.1
+scipy==1.5.2
+tensorflow==2.4.1
+```
+but you will probably need to install some more packages, as well.
+
+3. Your folder tree should look like `something/datasets/ansim/spec...`, `something/seld-net/seld.py` 
+
+4. Extract features from the downloaded dataset by running the `batch_feature_extraction.py` script. 
+
+5. Run `python3 create_symlinks_datasets.py` to collect links to input feature and label folders in a single folder
+
+6. Run 
+   ```
+   python3 seld.py overfit-test 888  # overfit test
+   python3 seld.py 2021-04-02-seldtcn 2  #training
+   ``` 
+   for the SELD-TCN model, or
+   
+   ```
+   python3 seld.py overfit-test-quaternion 888q  # overfit test
+   python3 seld.py 2021-04-02-qseldtcn 2q  #training
+   ``` 
+   the quaternion QSELD-TCN model.
+
 -----------------------------------
 
 # SELD-TCN: Sound Event Localization and Detection via Temporal Convolutional Networks
