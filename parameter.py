@@ -85,6 +85,7 @@ def get_params(argv):
     elif argv == '2':  # anechoic simulated Ambisonic data set
         params['dataset'] = 'ansim'
         params['sequence_length'] = 256
+        params['batch_size'] = 8
         # params['sequence_length'] = 512
 
     elif argv == '3':  # reverberant simulated Ambisonic data set
