@@ -308,7 +308,7 @@ def main(argv):
         print('\n\n')
         print('-------------------------------------------------------------------------------------------------------')
         print('The code expected three inputs')
-        print('\t>> python seld.py <job-id> <'train'-or-'test'> <task-id>')
+        print('\t>> python seld.py <job-id> <train-test> <task-id>')
         print('\t\t<job-id> is a unique identifier which is used for output filenames (models, training plots). '
               'You can use any number or string for this.')
         print('\t\t<task-id> is used to choose the user-defined parameter set from parameter.py')
