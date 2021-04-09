@@ -15,7 +15,8 @@ eps = np.finfo(np.float).eps
 
 
 def reshape_3Dto2D(A):
-    return A.reshape(A.shape[0] * A.shape[1], A.shape[2])
+    print(A.shape)
+    return A.reshape(-1, A.shape[2])
 
 
 def f1_overall_framewise(O, T):
