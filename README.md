@@ -6,17 +6,8 @@
 
 3. Clone this repository
 
-4. Fundamental requirements are
-
-```
-Keras==2.4.3
-matplotlib==3.3.4
-numpy==1.19.2
-scikit-learn==0.24.1
-scipy==1.5.2
-tensorflow==2.4.1
-```
-but you will probably need to install some more packages, as well.
+4. Run `pip install -r requirements.txt`.
+You may need to install some more packages, as well.
 
 3. Your folder tree should look like `something/datasets/ansim/spec...`, `something/seld-net/seld.py` 
 
