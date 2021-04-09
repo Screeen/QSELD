@@ -29,20 +29,22 @@ plot.switch_backend('agg')
 np.set_printoptions(precision=1, suppress=True, floatmode='fixed')
 
 
-def collect_test_labels(_data_gen_test, _data_out, classification_mode, quick_test):
+def collect_test_labels(data_generator, data_shape, classification_mode, quick_test):
     # Collecting ground truth for test data
-    nb_batch = 2 if quick_test else _data_gen_test.get_total_batches_in_data()
+    nb_batch = 2 if quick_test else data_generator.get_total_batches_in_data()
 
-    batch_size = _data_out[0][0]
-    gt_sed = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[0][2]))
-    gt_doa = np.zeros((nb_batch * batch_size, _data_out[0][1], _data_out[1][2]))
+    batch_size = data_shape[0][0]
+    gt_sed = np.zeros((nb_batch * batch_size, data_shape[0][1], data_shape[0][2]))
+    gt_doa = np.zeros((nb_batch * batch_size, data_shape[0][1], data_shape[1][2]))
 
+    print(f"gt_sed.shape: {gt_sed.shape}")
+    print(f"gt_doa.shape: {gt_doa.shape}")
     print("nb_batch in test: {}".format(nb_batch))
     cnt = 0
-    for tmp_feat, tmp_label in _data_gen_test.generate():
+    for tmp_feat, tmp_label in data_generator.generate():
         print(f"{cnt}")
-        gt_sed[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[0]
-        gt_doa[cnt * batch_size:(cnt + 1) * batch_size, :, :] = tmp_label[1]
+        gt_sed[cnt * batch_size : (cnt + 1) * batch_size, ...] = tmp_label[0] // 16, 512, 11
+        gt_doa[cnt * batch_size : (cnt + 1) * batch_size, ...] = tmp_label[1] // 16, 512, 33
         cnt = cnt + 1
         if cnt == nb_batch:
             break
