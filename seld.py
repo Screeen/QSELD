@@ -129,6 +129,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
     K.clear_session()
 
     for epoch_cnt in range(nb_epoch):
+        print(f"epoch {epoch_cnt}/nb_epoch")
         start = time.time()
         hist = model.fit(
             x=data_gen_train.generate(),
