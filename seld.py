@@ -304,11 +304,11 @@ def main(argv):
         second input: task_id - (optional) To chose the system configuration in parameters.py. 
                                 (default) uses default parameters
     """
-    if len(argv) != 3:
+    if len(argv) != 4:
         print('\n\n')
         print('-------------------------------------------------------------------------------------------------------')
-        print('The code expected two inputs')
-        print('\t>> python seld.py <job-id> <task-id>')
+        print('The code expected three inputs')
+        print('\t>> python seld.py <job-id> <'train'-or-'test'> <task-id>')
         print('\t\t<job-id> is a unique identifier which is used for output filenames (models, training plots). '
               'You can use any number or string for this.')
         print('\t\t<task-id> is used to choose the user-defined parameter set from parameter.py')
