@@ -1,15 +1,14 @@
 # April 2021 - Running ANSIM experiments
 
-1. Download ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703)
+1. Clone this repository. Your folder tree will look like `something/QSELD/seld.py`. 
 
-2. For the chosen dataset (ansim or resim or ..), overlap (1, 2 or 3) and split (1, 2 or 3), download the respective zip file. This contains both the audio files and the respective metadata. Unzip the files under the same 'base_folder/', ie, if you are downloading overlap 1 and split 1 of the ansim dataset, then the 'base_folder/' should have two folders - 'wav_ov1_split1_30db/' and 'desc_ov1_split1/' after unzipping.
+4. Run `pip install -r requirements.txt`. You may need to install some more packages, as well.
 
-3. Clone this repository
+5. Create a new `datasets` folder. Your folder tree should look like `something/datasets/`.
 
-4. Run `pip install -r requirements.txt`.
-You may need to install some more packages, as well.
+1. Download ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703). Create a new `ansim` folder. Your folder tree should look like `something/datasets/ansim`.
 
-3. Your folder tree should look like `something/datasets/ansim/spec...`, `something/seld-net/seld.py` 
+2. For the chosen dataset (ansim or resim or ..), overlap (1, 2 or 3) and split (1, 2 or 3), download the respective zip file. This contains both the audio files and the respective metadata. Unzip the files under the same folder, ie, if you are downloading overlap 1 and split 1 of the 'ansim' dataset, then the 'ansim/' folder should have two subfolders - 'wav_ov1_split1_30db/' and 'desc_ov1_split1/' after unzipping. After that, your folder tree should look like `something/datasets/ansim/wav_ov1_split1_30db`, `something/datasets/ansim/desc_ov1_split1`.
 
 4. Extract features from the downloaded dataset by running the `batch_feature_extraction.py` script. 
 
@@ -17,8 +16,8 @@ You may need to install some more packages, as well.
 
 6. Run 
    ```
-   python3 seld.py overfit-test 888  # overfit test
-   python3 seld.py 2021-04-02-seldtcn 2  #training
+   python3 seld.py overfit-test 888 # overfit
+   python3 seld.py 2021-04-02-seldtcn 2 #training
    ``` 
    for the SELD-TCN model, or
    
