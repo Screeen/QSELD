@@ -6,7 +6,7 @@
 
 5. Create a new `datasets` folder. Your folder tree should look like `something/datasets/`.
 
-1. Download ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703). Create a new `ansim` folder. Your folder tree should look like `something/datasets/ansim`.
+1. Download ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703). Create a new `ansim` folder inside `something/datasets/`.
 
 2. For the chosen dataset (ansim or resim or ..), overlap (1, 2 or 3) and split (1, 2 or 3), download the respective zip file. This contains both the audio files and the respective metadata. Unzip the files under the same folder, ie, if you are downloading overlap 1 and split 1 of the 'ansim' dataset, then the 'ansim/' folder should have two subfolders - 'wav_ov1_split1_30db/' and 'desc_ov1_split1/' after unzipping. After that, your folder tree should look like `something/datasets/ansim/wav_ov1_split1_30db`, `something/datasets/ansim/desc_ov1_split1`.
 
