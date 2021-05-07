@@ -132,7 +132,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
     K.clear_session()
 
     for epoch_cnt in range(nb_epoch):
-        print(f"epoch {epoch_cnt}/{nb_epoch}")
+        print(f"Iteration {epoch_cnt}/{nb_epoch}")
         start = time.time()
         hist = model.fit(
             x=data_gen_train.generate(),
@@ -148,7 +148,6 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
         if params['debug_load_few_files']:
-            print(f"epoch {epoch_cnt}")
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
