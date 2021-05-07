@@ -31,7 +31,7 @@ class DataGenerator(object):
         self._data_format = data_format
 
         self._filenames_list = list()
-        self._nb_frames_file = None     # Assuming number of frames in feat files are the same
+        self._nb_frames_file = 0     # Assuming number of frames in feat files are the same
         self._feat_len = None
         self._2_nb_ch = 2 * self._feat_cls.get_nb_channels()
         self._label_len = None  # total length of label - DOA + SED
@@ -236,4 +236,3 @@ class DataGenerator(object):
 
     def nb_frames_1s(self):
         return self._feat_cls.nb_frames_1s()
-

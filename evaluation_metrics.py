@@ -20,7 +20,8 @@ def reshape_3Dto2D(A):
     print(f"reshape_3Dto2D: output shape {out.shape}")
     return out
 
-
+# O: output prediction
+# T: ground truth
 def f1_overall_framewise(O, T):
     if len(O.shape) == 3:
         O, T = reshape_3Dto2D(O), reshape_3Dto2D(T)
@@ -74,13 +75,14 @@ def f1_1sec(O, T, block_size):
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
     return f1_framewise(O_block, T_block)
 
-
+# O: output prediction
+# T: ground truth
 def f1_overall_1sec(O, T, block_size):
     if len(O.shape) == 3:
         O, T = reshape_3Dto2D(O), reshape_3Dto2D(T)
     new_size = int(np.ceil(O.shape[0] / block_size))
     O_block = np.zeros((new_size, O.shape[1]))
-    T_block = np.zeros((new_size, O.shape[1]))
+    T_block = np.zeros((new_size, T.shape[1]))
     for i in range(0, new_size):
         O_block[i,] = np.max(O[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)

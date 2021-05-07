@@ -22,16 +22,21 @@ class FeatureClass:
         if dataset == 'ansim':
             self._base_folder = os.path.join(datasets_dir, 'ansim')
         elif dataset == 'resim':
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_data_echoic/')
+            self._base_folder = os.path.join(datasets_dir, 'resim')
         elif dataset == 'cansim':
+            assert(false)
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata/')
         elif dataset == 'cresim':
+            assert (false)
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata_echoic/')
         elif dataset == 'real':
+            assert (false)
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
         elif dataset == 'mansim':
+            assert (false)
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'moving_sound_events_foa/')
         elif dataset == 'mreal':
+            assert (false)
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_movingdata_foa/')
 
         # Output directories
