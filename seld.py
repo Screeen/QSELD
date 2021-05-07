@@ -30,8 +30,9 @@ np.set_printoptions(precision=1, suppress=True, floatmode='fixed')
 
 
 def collect_test_labels(data_generator, data_shape, classification_mode, quick_test):
-    # Collecting ground truth for test data
-    nb_batch = 2 if quick_test else data_generator.get_total_batches_in_data()
+    print(f"Collecting ground truth for test data")
+    max_nb_batch = data_generator.get_total_batches_in_data()
+    nb_batch = min(2, max_nb_batch) if quick_test else max_nb_batch
 
     batch_size = data_shape[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, data_shape[0][1], data_shape[0][2]))
@@ -41,10 +42,12 @@ def collect_test_labels(data_generator, data_shape, classification_mode, quick_t
     print(f"gt_doa.shape: {gt_doa.shape}")
     print("nb_batch in test: {}".format(nb_batch))
     cnt = 0
-    for tmp_feat, tmp_label in data_generator.generate():
-        print(f"{cnt}")
-        gt_sed[cnt * batch_size : (cnt + 1) * batch_size, ...] = tmp_label[0] // 16, 512, 11
-        gt_doa[cnt * batch_size : (cnt + 1) * batch_size, ...] = tmp_label[1] // 16, 512, 33
+    for _, tmp_label in data_generator.generate():
+        print(f"Batch {cnt}")
+        gt_sed_batch = tmp_label[0] # 16, 512, 11 - batch size, fftsize, ...
+        gt_doa_batch = tmp_label[1] # 16, 512, 33 - batch size, fftsize, ...
+        gt_sed[cnt * batch_size : (cnt + 1) * batch_size, ...] = gt_sed_batch
+        gt_doa[cnt * batch_size : (cnt + 1) * batch_size, ...] = gt_doa_batch
         cnt = cnt + 1
         if cnt == nb_batch:
             break
@@ -129,7 +132,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
     K.clear_session()
 
     for epoch_cnt in range(nb_epoch):
-        print(f"epoch {epoch_cnt}/nb_epoch")
+        print(f"epoch {epoch_cnt}/{nb_epoch}")
         start = time.time()
         hist = model.fit(
             x=data_gen_train.generate(),
@@ -144,7 +147,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
-        if params['load_only_one_file']:
+        if params['debug_load_few_files']:
             print(f"epoch {epoch_cnt}")
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
@@ -190,7 +193,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                            epoch_metric_loss)
 
             patience_cnt += 1
-            if (epoch_metric_loss[epoch_cnt] < best_metric and not params['load_only_one_file']) or (
+            if (epoch_metric_loss[epoch_cnt] < best_metric and not params['debug_load_few_files']) or (
                     epoch_cnt % 50 == 0):
                 best_metric = epoch_metric_loss[epoch_cnt]
                 best_conf_mat = conf_mat
@@ -217,10 +220,10 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         # otherwise RAM use increases after every epoch. But is the optimizer state forgotten?
         K.clear_session()
 
-        if params['load_only_one_file'] and hist.history.get('loss')[-1] < 0.01:
+        if params['debug_load_few_files'] and hist.history.get('loss')[-1] < 0.01:
             break
 
-    if params['load_only_one_file']:
+    if params['debug_load_few_files']:
         model.save(model_path)
 
     else:
@@ -360,7 +363,7 @@ def main(argv):
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], load_only_one_file=params['load_only_one_file'],
+            azi_only=params['azi_only'], debug_load_few_files=params['debug_load_few_files'],
             data_format=params['data_format']
         )
 
@@ -370,7 +373,7 @@ def main(argv):
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'],
+            azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
             data_format=params['data_format']
         )
     else:
@@ -380,7 +383,7 @@ def main(argv):
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], shuffle=False, load_only_one_file=params['load_only_one_file'],
+            azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
             data_format=params['data_format']
         )
 

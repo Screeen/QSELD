@@ -14,7 +14,7 @@ class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False, load_only_one_file=False, data_format='channels_first'
+            azi_only=False, debug_load_few_files=False, data_format='channels_first'
     ):
         self._datagen_mode = datagen_mode
         self._classifier_mode = classifier_mode
@@ -27,7 +27,7 @@ class DataGenerator(object):
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only
-        self._load_only_one_file = load_only_one_file
+        self._debug_load_few_files = debug_load_few_files
         self._data_format = data_format
 
         self._filenames_list = list()
@@ -48,6 +48,8 @@ class DataGenerator(object):
 
         self._nb_total_batches = int(np.floor((len(self._filenames_list) * self._nb_frames_file /
                                                float(self._seq_len * self._batch_size))))
+        print(f"Data generator {datagen_mode}: {self._nb_total_batches} batches per epoch.")
+        assert (self._nb_total_batches > 1)
 
         print(
             'Datagen_mode: {}, nb_files: {}, nb_classes:{}\n'
@@ -88,8 +90,8 @@ class DataGenerator(object):
         file_list = os.listdir(self._label_dir)
         if len(file_list) == 0:
             raise FileNotFoundError
-        if self._load_only_one_file:
-            file_list = [file_list[0]]
+        if self._debug_load_few_files:
+            file_list = file_list[:6]
         for filename in file_list:
             # if self._datagen_mode in filename:
             self._filenames_list.append(filename)
@@ -120,6 +122,7 @@ class DataGenerator(object):
 
             file_cnt = 0
 
+            assert(self._nb_total_batches > 1)
             for i in range(self._nb_total_batches):
 
                 # load feat and label to circular buffer. Always maintain atleast one batch worth feat and label in the

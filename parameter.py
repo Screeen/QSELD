@@ -17,7 +17,7 @@ def get_params(argv):
         test_split=[4],
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
-        load_only_one_file=False,
+        debug_load_few_files=False,
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length
@@ -65,13 +65,13 @@ def get_params(argv):
         print("QUICK TEST MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 2
-        params['load_only_one_file'] = False
+        params['debug_load_few_files'] = False
 
     elif argv == '888':
         print("OVERFIT MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 250
-        params['load_only_one_file'] = True
+        params['debug_load_few_files'] = True
         params['spatial_dropout_rate'] = 0
         params['dropout_rate'] = 0
 
@@ -79,7 +79,7 @@ def get_params(argv):
         print("Test evaluation\n")
         params['quick_test'] = True
         params['nb_epochs'] = 1
-        params['load_only_one_file'] = False
+        params['debug_load_few_files'] = False
 
     # Different datasets
     elif argv == '2':  # anechoic simulated Ambisonic data set
