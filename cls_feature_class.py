@@ -183,8 +183,10 @@ class FeatureClass:
             if 'real' in self._dataset:
                 desc_file['class'].append(split_line[0].split('.')[0].split('-')[1])
             else:
-                desc_file['class'].append(split_line[0].split('.')[0])
-                # desc_file['class'].append(split_line[0].split('.')[0][:-3])
+                className = split_line[0].split('.')[0]
+                if(className[-1].isdigit()):
+                    className = className[:-3]
+                desc_file['class'].append(className)
             desc_file['start'].append(int(np.floor(float(split_line[1])*self._frame_res)))
             desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(float(split_line[3])))
@@ -391,10 +393,10 @@ class FeatureClass:
             spec_scaler = preprocessing.StandardScaler()
             train_cnt = 0
             for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                if 'split1' in file_name or 'split2' in file_name:
+                if 'test' not in file_name:
                     print(file_cnt, train_cnt, file_name)
                     feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                    spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+                    spec_scaler = spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
                     del feat_file
                     train_cnt += 1
             joblib.dump(
@@ -403,17 +405,17 @@ class FeatureClass:
             )
 
         print('Normalizing feature files:')
-        spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
+        fitted_scaler = joblib.load(normalized_features_wts_file) # load weights again using this command
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                print(file_cnt, file_name)
-                if not os.path.exists(os.path.join(self._feat_dir_norm, file_name)):
-                    feat_file = np.load(os.path.join(self._feat_dir, file_name))
-                    feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
-                    np.save(
-                        os.path.join(self._feat_dir_norm, file_name),
-                        feat_file
-                    )
-                    del feat_file
+            print(file_cnt, file_name)
+            if not os.path.exists(os.path.join(self._feat_dir_norm, file_name)):
+                feat_file = np.load(os.path.join(self._feat_dir, file_name))
+                feat_file = fitted_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
+                np.save(
+                    os.path.join(self._feat_dir_norm, file_name),
+                    feat_file
+                )
+                del feat_file
         print('normalized files written to {} folder and the scaler to {}'.format(
             self._feat_dir_norm, normalized_features_wts_file))
 
