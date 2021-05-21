@@ -21,8 +21,8 @@ import time
 import datetime
 import keras_model_giusenso
 import keras.backend as K
-import logging
 
+import logging
 logger = logging.getLogger(__name__)
 logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
@@ -358,6 +358,8 @@ def main(argv):
     utils.setup_logger(log_dir)
     logger.info(f"log_dir {log_dir}")
     logger.info("unique_name: {}\n".format(unique_name))
+
+    utils.copy_source_code(log_dir)
 
     data_gen_train = None
     data_gen_val = None
