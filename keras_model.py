@@ -229,16 +229,7 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
     return input_output
 
 
-def output_block(inp, out_shape, dropout=0, fnn_size=[0]):
-
-    doa = inp
-    for nb_fnn_filter in fnn_size:
-        doa = TimeDistributed(Dense(nb_fnn_filter))(doa)
-        doa = Dropout(dropout)(doa)
-
-    num_units_doa = out_shape[1][-1]
-    doa = TimeDistributed(Dense(num_units_doa))(doa)
-    doa = Activation('tanh', name='doa_out')(doa)
+def output_block(inp, out_shape, dropout=0, fnn_size=[0], params=None):
 
     # SED
     sed = inp
@@ -248,6 +239,20 @@ def output_block(inp, out_shape, dropout=0, fnn_size=[0]):
     num_units_sed = out_shape[0][-1]
     sed = TimeDistributed(Dense(num_units_sed))(sed)
     sed = Activation('sigmoid', name='sed_out')(sed)
+
+    doa = inp
+    for nb_fnn_filter in fnn_size:
+        doa = TimeDistributed(Dense(nb_fnn_filter))(doa)
+        doa = Dropout(dropout)(doa)
+
+    num_units_doa = num_units_sed*3
+    # num_units_doa = out_shape[1][-1]
+    doa = TimeDistributed(Dense(num_units_doa))(doa)
+    doa = Activation('tanh', name='doa_out')(doa)
+
+    # for masked mse
+    if params['doa_objective'] == 'masked_mse':
+        doa = Concatenate()([keras.backend.zeros_like(sed), doa])
 
     return sed, doa
 
@@ -292,7 +297,7 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
                               spatial_dropout_rate=spatial_dropout, nb_tcn_filt_dilated_=nb_tcn_filt_,
                               nb_tcn_blocks_=nb_tcn_blocks_, use_quaternions_=use_quaternions_)
 
-    sed, doa = output_block(spec_cnn, out_shape=output_shape, dropout=dropout_rate, fnn_size=fnn_size)
+    sed, doa = output_block(spec_cnn, out_shape=output_shape, dropout=dropout_rate, fnn_size=fnn_size, params=params)
 
     doa_objective = params['doa_objective']
     model = None
@@ -300,28 +305,35 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
         model = Model(inputs=spec_start, outputs=[sed, doa])
         model.compile(optimizer=Adam(), loss=['binary_crossentropy', 'mse'], loss_weights=weights)
     elif doa_objective is 'masked_mse':
-        doa_concat = Concatenate(axis=-1, name='doa_concat')([sed, doa])
-        model = Model(inputs=spec_start, outputs=[sed, doa_concat])
-        model.compile(optimizer=Adam(), loss=['binary_crossentropy', masked_mse], loss_weights=weights)
+        # doa_concat = Concatenate(axis=-1, name='doa_concat')([sed, doa])
+        model = Model(inputs=spec_start, outputs=[sed, doa])
+        model.compile(optimizer=Adam(), loss=['binary_crossentropy', masked_mse], loss_weights=weights, run_eagerly=True)
     else:
         logger.error('ERROR: Unknown doa_objective: {}'.format(doa_objective))
         exit()
-        # run_eagerly=True
 
     logger.info(model.summary())
     return model
 
-
-def masked_mse(y_gt, model_out):
+"""
+y_gt: shape (..., num_classes*3) for prediction with Cartesian coordinates.
+sed_concat_doa_model_out: shape (..., num_classes + num_classes*3) for prediction with Cartesian coordinates.
+"""
+def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
     # SED mask: Use only the predicted DOAs when gt SED > 0.5
-    num_classes = 11  # TODO fix this hardcoded value of number of classes
-    sed_out = y_gt[..., :num_classes] >= 0.5
-    sed_out = keras.backend.repeat_elements(sed_out, 3, -1)
-    sed_out = keras.backend.cast(sed_out, 'float32')
+    num_classes = 11  # TODO hardcoded value of number of classes
+    # logger.info(f"doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
+    # logger.info(f"sed_concat_doa_model_out.shape {sed_concat_doa_model_out.shape}")
+    # logger.info(f"sed_concat_doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
+    sed_out_mask = sed_concat_doa_ground_truth[..., 0:num_classes] >= 0.5
+    sed_out_mask = keras.backend.repeat_elements(sed_out_mask, 4, -1)
+    sed_out_mask = keras.backend.cast(sed_out_mask, 'float32')
 
     # Use the mask to computed mse now. Normalize with the mask weights
     return keras.backend.sqrt(keras.backend.sum(keras.backend.square(
-        y_gt - model_out[:, :, num_classes:]) * sed_out))/keras.backend.sum(sed_out)
+        sed_concat_doa_ground_truth - sed_concat_doa_model_out) * sed_out_mask)) / keras.backend.sum(sed_out_mask)
+
+
 
 
 def load_seld_model(model_file, doa_objective):

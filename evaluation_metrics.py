@@ -6,6 +6,8 @@
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from IPython import embed
+import logging
+logger = logging.getLogger(__name__)
 
 eps = np.finfo(np.float).eps
 
@@ -229,10 +231,12 @@ def compute_doa_scores_regr_xyz(pred_doa, gt_doa, pred_sed, gt_sed):
             good_frame_cnt = good_frame_cnt + 1
 
         # DOA Loss with respect to groundtruth
+        # logger.info(f"gt_doa.shape {gt_doa.shape}")
         doa_frame_gt_x = gt_doa[frame_cnt][:nb_sed][sed_frame == 1]
         doa_frame_gt_y = gt_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame == 1]
         doa_frame_gt_z = gt_doa[frame_cnt][2 * nb_sed:][sed_frame == 1]
 
+        # logger.info(f"pred_doa.shape {pred_doa.shape}")
         doa_frame_pred_x = pred_doa[frame_cnt][:nb_sed][sed_frame == 1]
         doa_frame_pred_y = pred_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame == 1]
         doa_frame_pred_z = pred_doa[frame_cnt][2 * nb_sed:][sed_frame == 1]

@@ -34,7 +34,7 @@ def get_params(argv):
         nb_epochs=500,             # Train for maximum epochs
 
         epochs_per_iteration=2,
-        doa_objective='masked_mse',
+        doa_objective='mse',
         recurrent_type='tcn_new',  # TCN, GRU, tcn_new
 
         # TCN
@@ -68,11 +68,14 @@ def get_params(argv):
         params['quick_test'] = True
         params['nb_epochs'] = 2
         params['debug_load_few_files'] = False
+        params['batch_size'] = 4
+
 
     elif argv == '888':
         logger.info("OVERFIT MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 250
+        params['batch_size'] = 4
         params['debug_load_few_files'] = True
         params['spatial_dropout_rate'] = 0
         params['dropout_rate'] = 0

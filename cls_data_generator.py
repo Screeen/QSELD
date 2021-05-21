@@ -16,8 +16,11 @@ class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False, debug_load_few_files=False, data_format='channels_first'
+            azi_only=False, debug_load_few_files=False, data_format='channels_first', params=None
     ):
+        if params is None:
+            params = {}
+        self.params = params
         self._datagen_mode = datagen_mode
         self._classifier_mode = classifier_mode
         self._batch_size = batch_size
@@ -78,9 +81,13 @@ class DataGenerator(object):
         else:
             feat_shape = (self._batch_size, self._seq_len, self._feat_len, self._2_nb_ch)
 
+        doa_shape = (self._batch_size, self._seq_len, self._nb_classes*(2 if self._azi_only else 3))
+        if self.params['doa_objective'] == 'masked_mse':  # add sed ground truth for masking
+            doa_shape = (self._batch_size, self._seq_len, self._nb_classes + self._nb_classes*(2 if self._azi_only else 3))
+
         label_shape = [
             (self._batch_size, self._seq_len, self._nb_classes),
-            (self._batch_size, self._seq_len, self._nb_classes*(2 if self._azi_only else 3))
+            doa_shape
         ]
         return feat_shape, label_shape
 
@@ -184,10 +191,11 @@ class DataGenerator(object):
                         z[no_ele_ind] = 0
                         y[no_ele_ind] = 0
 
-                    label = [
-                        label[:, :, :self._nb_classes],  # SED labels
-                        np.concatenate((x, y, z), -1)    # DOA Cartesian labels
-                         ]
+                    sed_gt = label[:, :, :self._nb_classes]  # SED labels
+                    doa_gt = np.concatenate((x, y, z), -1)  # DOA Cartesian labels
+                    if self.params['doa_objective'] == 'masked_mse': # add sed ground truth for masking
+                        doa_gt = np.concatenate((sed_gt, doa_gt), -1)  # DOA Cartesian labels
+                    label = [sed_gt, doa_gt]
 
                 yield feat, label
 

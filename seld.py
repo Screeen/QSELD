@@ -168,8 +168,17 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                 doa_pred = pred[1]
                 num_classes = sed_pred.shape[-1]
                 num_dims_xyz = 3
+
+                logger.info(f"doa_pred.shape {doa_pred.shape}")
                 if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
                     doa_pred = doa_pred[..., num_classes:]
+                    logger.info(f"doa_pred.shape {doa_pred.shape}")
+
+                logger.info(f"doa_gt.shape {doa_gt.shape}")
+                if doa_gt.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
+                    doa_gt = doa_gt[..., num_classes:]
+                    logger.info(f"doa_gt.shape {doa_gt.shape}")
+
                 doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
                 sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
@@ -372,7 +381,7 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format']
+            data_format=params['data_format'], params=params
         )
 
         data_gen_val = cls_data_generator.DataGenerator(
@@ -382,7 +391,7 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format']
+            data_format=params['data_format'], params=params
         )
     else:
         data_gen_test = cls_data_generator.DataGenerator(
@@ -392,7 +401,7 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format']
+            data_format=params['data_format'], params=params
         )
 
     data_gen_for_shapes = data_gen_train if isTraining else data_gen_test
