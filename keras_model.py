@@ -299,18 +299,10 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
 
     sed, doa = output_block(spec_cnn, out_shape=output_shape, dropout=dropout_rate, fnn_size=fnn_size, params=params)
 
-    doa_objective = params['doa_objective']
-    model = None
-    if doa_objective is 'mse':
-        model = Model(inputs=spec_start, outputs=[sed, doa])
-        model.compile(optimizer=Adam(), loss=['binary_crossentropy', 'mse'], loss_weights=weights)
-    elif doa_objective is 'masked_mse':
-        # doa_concat = Concatenate(axis=-1, name='doa_concat')([sed, doa])
-        model = Model(inputs=spec_start, outputs=[sed, doa])
-        model.compile(optimizer=Adam(), loss=['binary_crossentropy', masked_mse], loss_weights=weights, run_eagerly=True)
-    else:
-        logger.error('ERROR: Unknown doa_objective: {}'.format(doa_objective))
-        exit()
+    losses = ['binary_crossentropy', masked_mse] if params['doa_objective'] == 'masked_mse' \
+        else ['binary_crossentropy', 'mse']
+    model = Model(inputs=spec_start, outputs=[sed, doa])
+    model.compile(optimizer=Adam(), loss=losses, loss_weights=weights, run_eagerly=True)
 
     logger.info(model.summary())
     return model
