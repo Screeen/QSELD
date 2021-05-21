@@ -3,6 +3,8 @@
 # Ideally, do not change the values of the default parameters. Create separate cases with unique <task-id> as seen in
 # the code below (if-else loop) and use them. This way you can easily reproduce a configuration on a later time.
 
+import logging
+logger = logging.getLogger(__name__)
 
 def get_params(argv):
     params = dict(
@@ -49,7 +51,7 @@ def get_params(argv):
         cnn_3d=False,       # For future. Not relevant for now
         weakness=0          # For future. Not relevant for now
     )
-    print("SET: {}".format(argv))
+    logger.info("SET: {}".format(argv))
     # ########### default parameters ##############
     params['patience'] = int(0.1 * params['nb_epochs'])     # Stop training if patience reached
 
@@ -58,17 +60,17 @@ def get_params(argv):
     argv = argv.replace('q', '')
 
     if argv == '1':
-        print("USING DEFAULT PARAMETERS\n")
+        logger.info("USING DEFAULT PARAMETERS\n")
 
     # Quick test
     elif '999' in argv:
-        print("QUICK TEST MODE\n")
+        logger.info("QUICK TEST MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 2
         params['debug_load_few_files'] = False
 
     elif argv == '888':
-        print("OVERFIT MODE\n")
+        logger.info("OVERFIT MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 250
         params['debug_load_few_files'] = True
@@ -76,7 +78,7 @@ def get_params(argv):
         params['dropout_rate'] = 0
 
     elif argv == '777':
-        print("Test evaluation\n")
+        logger.info("Test evaluation\n")
         params['quick_test'] = True
         params['nb_epochs'] = 1
         params['debug_load_few_files'] = False
@@ -117,9 +119,9 @@ def get_params(argv):
         params['batch_size'] = 32
 
     else:
-        print('ERROR: unknown argument {}'.format(argv))
+        logger.info('ERROR: unknown argument {}'.format(argv))
         exit()
 
     for key, value in params.items():
-        print("{}: {}".format(key, value))
+        logger.info("{}: {}".format(key, value))
     return params

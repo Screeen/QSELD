@@ -15,9 +15,9 @@ eps = np.finfo(np.float).eps
 
 
 def reshape_3Dto2D(A):
-    print(f"reshape_3Dto2D: input shape {A.shape}")
+    # print(f"reshape_3Dto2D: input shape {A.shape}")
     out = A.reshape(-1, A.shape[2])
-    print(f"reshape_3Dto2D: output shape {out.shape}")
+    # print(f"reshape_3Dto2D: output shape {out.shape}")
     return out
 
 # O: output prediction

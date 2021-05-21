@@ -14,7 +14,8 @@ import keras.backend as K
 
 from quaternion.qdense import *
 from quaternion.qconv import *
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Identity:
     def __call__(self, x, *args, **kwargs):
@@ -38,9 +39,9 @@ def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_d
     assert (input_data_format == 'channels_last')
     tcn_data_format = 'channels_last'
     num_frames = data_in[1]
-    print(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
+    logger.info(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
     inp = Reshape((num_frames, -1))(inp)
-    print(f"K.int_shape(inp) {K.int_shape(inp)}")
+    logger.info(f"K.int_shape(inp) {K.int_shape(inp)}")
 
     num_tcn_blocks = nb_tcn_blocks_
 
@@ -91,7 +92,7 @@ def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_d
     h = keras.layers.Add()(skip_outputs)
     h = Activation('relu')(h)
 
-    print(f"K.int_shape(h) {K.int_shape(h)}")
+    logger.info(f"K.int_shape(h) {K.int_shape(h)}")
 
     # 1D convolution
     h = ConvGeneric1D(filters=nb_1x1_filters_final, kernel_size=1, padding='same', data_format=tcn_data_format)(h)
@@ -101,12 +102,12 @@ def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_d
     h = ConvGeneric1D(filters=nb_1x1_filters_final, kernel_size=1, padding='same', data_format=tcn_data_format)(h)
     input_output = Activation('tanh')(h)
 
-    print(f"K.int_shape(input_output) {K.int_shape(input_output)}")
+    logger.info(f"K.int_shape(input_output) {K.int_shape(input_output)}")
 
     if input_data_format == 'channels_first':
         # Put temporal dimension first again
         input_output = Permute((2, 1))(input_output)
-        print(f"K.int_shape(input_output) {K.int_shape(input_output)}")
+        logger.info(f"K.int_shape(input_output) {K.int_shape(input_output)}")
 
     return input_output
 
@@ -117,9 +118,9 @@ def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropou
     assert (input_data_format == 'channels_last')
     tcn_data_format = 'channels_last'
     num_frames = data_in[1]
-    print(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
+    logger.info(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
     inp = Reshape((num_frames, -1))(inp)
-    print(f"K.int_shape(inp) {K.int_shape(inp)}")
+    logger.info(f"K.int_shape(inp) {K.int_shape(inp)}")
 
     num_tcn_blocks = nb_tcn_blocks_
 
@@ -172,7 +173,7 @@ def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropou
     h = keras.layers.Add()(skip_outputs)
     h = tf.keras.activations.relu(h, alpha=0.2)
 
-    print(f"K.int_shape(h) {K.int_shape(h)}")
+    logger.info(f"K.int_shape(h) {K.int_shape(h)}")
 
     # 1D convolution
     h = ConvGeneric1D(filters=nb_1x1_filters_final, kernel_size=1, padding='same', data_format=tcn_data_format)(h)
@@ -183,12 +184,12 @@ def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropou
     input_output = tf.keras.activations.relu(h, alpha=0.2)
     # input_output = Activation('tanh')(h)
 
-    print(f"K.int_shape(input_output) {K.int_shape(input_output)}")
+    logger.info(f"K.int_shape(input_output) {K.int_shape(input_output)}")
 
     if input_data_format == 'channels_first':
         # Put temporal dimension first again
         input_output = Permute((2, 1))(input_output)
-        print(f"K.int_shape(input_output) {K.int_shape(input_output)}")
+        logger.info(f"K.int_shape(input_output) {K.int_shape(input_output)}")
 
     return input_output
 
@@ -196,22 +197,22 @@ def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropou
 def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data_in=(),
                    input_data_format='channels_last', spatial_dropout_rate=0.5, nb_tcn_filt_dilated_=128,
                    nb_tcn_blocks_=10, use_quaternions_=False):
-    print(f'recurrent_type {recurrent_type}')
-    print(f"temporal block input shape {K.int_shape(inp)}")
+    logger.info(f'recurrent_type {recurrent_type}')
+    logger.info(f"temporal block input shape {K.int_shape(inp)}")
 
     if input_data_format == 'channels_first':
-        print(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
+        logger.info(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
         inp = Permute((2, 1, 3))(inp)
-        print(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
+        logger.info(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
         inp = Reshape((data_in[-2], -1))(inp)
-        print(f"K.int_shape(spec_rnn) {K.int_shape(inp)}")
+        logger.info(f"K.int_shape(spec_rnn) {K.int_shape(inp)}")
     else:
         num_frames = data_in[1]
         inp = Reshape((num_frames, -1))(inp)
-        print(f"K.int_shape(inp) {K.int_shape(inp)}")
+        logger.info(f"K.int_shape(inp) {K.int_shape(inp)}")
 
     recurrent_type =str.lower(recurrent_type)
-    print(f"Temporal block {recurrent_type} begins")
+    logger.info(f"Temporal block {recurrent_type} begins")
     if recurrent_type == 'gru':
         input_output = temporal_block_gru(inp, num_filters_gru, dropout, data_in, input_data_format)
     elif recurrent_type == 'tcn':
@@ -267,7 +268,7 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
     assert (data_format == "channels_last")
     nb_cnn2d_filt = params['nb_cnn2d_filt'] if not use_quaternions_ else params['nb_cnn2d_filt'] // 4
 
-    print(f"K.int_shape(spec_start) {K.int_shape(spec_start)}")
+    logger.info(f"K.int_shape(spec_start) {K.int_shape(spec_start)}")
     spec_cnn = spec_start
     for i, this_pool_size in enumerate(pool_size):
         if use_quaternions_:
@@ -303,11 +304,11 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
         model = Model(inputs=spec_start, outputs=[sed, doa_concat])
         model.compile(optimizer=Adam(), loss=['binary_crossentropy', masked_mse], loss_weights=weights)
     else:
-        print('ERROR: Unknown doa_objective: {}'.format(doa_objective))
+        logger.error('ERROR: Unknown doa_objective: {}'.format(doa_objective))
         exit()
         # run_eagerly=True
 
-    model.summary()
+    logger.info(model.summary())
     return model
 
 
@@ -329,6 +330,6 @@ def load_seld_model(model_file, doa_objective):
     elif doa_objective is 'masked_mse':
         return load_model(model_file, custom_objects={'masked_mse': masked_mse})
     else:
-        print('ERROR: Unknown doa objective: {}'.format(doa_objective))
+        logger.error('ERROR: Unknown doa objective: {}'.format(doa_objective))
         exit()
 

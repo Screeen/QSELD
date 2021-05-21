@@ -9,6 +9,8 @@ from IPython import embed
 from collections import deque
 import random
 
+import logging
+logger = logging.getLogger(__name__)
 
 class DataGenerator(object):
     def __init__(
@@ -48,19 +50,18 @@ class DataGenerator(object):
 
         self._nb_total_batches = int(np.floor((len(self._filenames_list) * self._nb_frames_file /
                                                float(self._seq_len * self._batch_size))))
-        print(f"Data generator {datagen_mode}: {self._nb_total_batches} batches per epoch.")
+        logger.info(f"Data generator {datagen_mode}: {self._nb_total_batches} batches per epoch.")
         assert (self._nb_total_batches > 1)
 
-        print(
+        logger.info(
             'Datagen_mode: {}, nb_files: {}, nb_classes:{}\n'
             'nb_frames_file: {}, feat_len: {}, nb_ch: {}, label_len:{}\n'.format(
                 self._datagen_mode, len(self._filenames_list),  self._nb_classes,
                 self._nb_frames_file, self._feat_len, self._2_nb_ch, self._label_len
                 )
-
         )
 
-        print(
+        logger.info(
             'Dataset: {}, ov: {}, split: {}\n'
             'batch_size: {}, seq_len: {}, shuffle: {}\n'
             'label_dir: {}\n '
@@ -204,7 +205,7 @@ class DataGenerator(object):
                 data = data[:-(data.shape[0] % self._seq_len), :, :]
             data = data.reshape((data.shape[0] // self._seq_len, self._seq_len, data.shape[1], data.shape[2]))
         else:
-            print('ERROR: Unknown data dimensions: {}'.format(data.shape))
+            logger.error('ERROR: Unknown data dimensions: {}'.format(data.shape))
             exit()
         return data
 
@@ -221,7 +222,7 @@ class DataGenerator(object):
             tmp = np.zeros((in_shape[0], 1, in_shape[1], in_shape[2], in_shape[3]))
             tmp[:, 0, :, :, :] = data
         else:
-            print('ERROR: The input should be a 3D matrix but it seems to have dimensions: {}'.format(in_shape))
+            logger.error('ERROR: The input should be a 3D matrix but it seems to have dimensions: {}'.format(in_shape))
             exit()
         return tmp
 
