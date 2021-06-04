@@ -308,7 +308,7 @@ def main(argv):
         first input: job_id - (optional) all the output files will be uniquely represented with this. (default) 1
         second input: task_id - (optional) To chose the system configuration in parameters.py. 
                                 (default) uses default parameters
-    """
+    
     if len(argv) != 4:
         print('\n\n')
         print('-------------------------------------------------------------------------------------------------------')
@@ -320,6 +320,7 @@ def main(argv):
         print('Using default inputs for now')
         print('-------------------------------------------------------------------------------------------------------')
         print('\n\n')
+    """
 
     job_id = 1 if len(argv) < 2 else argv[1]
 
@@ -411,28 +412,32 @@ def main(argv):
             params['rnn_size'], params['fnn_size']
         )
     )
+    
+    model = None
+    if isTraining:
+        if params['use_quaternions']:
+            assert (params['data_format'] == 'channels_last')
 
-    if params['use_quaternions']:
-        assert (params['data_format'] == 'channels_last')
-
-    if params['use_giusenso']:
-        assert (params['data_format'] == 'channels_first')
-        model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'],
-                                                        params['nb_cnn2d_filt'],
-                                                        params['pool_size'], params['fnn_size'], params['loss_weights'])
-    else:
-        model = keras_model.get_model(input_shape=data_in, output_shape=data_out, dropout_rate=params['dropout_rate'],
-                                      pool_size=params['pool_size'],
-                                      rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                      weights=params['loss_weights'], data_format=params['data_format'],
-                                      params=params)
+        if params['use_giusenso']:
+            assert (params['data_format'] == 'channels_first')
+            model = keras_model_giusenso.get_model_giusenso(data_in, data_out, params['dropout_rate'],
+                                                            params['nb_cnn2d_filt'],
+                                                            params['pool_size'], params['fnn_size'], params['loss_weights'])
+        else:
+            model = keras_model.get_model(input_shape=data_in, output_shape=data_out, dropout_rate=params['dropout_rate'],
+                                          pool_size=params['pool_size'],
+                                          rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
+                                          weights=params['loss_weights'], data_format=params['data_format'],
+                                          params=params)
 
     model_path = os.path.join(log_dir, 'model')
     if os.path.exists(model_path):
         print(f"Loading pretrained model from {model_path}")
-        del model
+        if model:
+            del model
         model = keras_model.load_seld_model(os.path.abspath(model_path), params['doa_objective'])
         print(f"Finished loading")
+        print(model.summary())
     else:
         if not isTraining:
             raise FileNotFoundError(f"test mode but model was not found at {os.path.abspath(model_path)}")

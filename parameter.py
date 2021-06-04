@@ -11,10 +11,10 @@ def get_params(argv):
 
         # Dataset loading parameters
         dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
-        overlap=[1, 2],         # maximum number of overlapping sound events [1, 2, 3]
-        train_split=[1, 2],     # Cross validation split [1, 2, 3]
-        val_split=[3],
-        test_split=[4],
+        overlap=[1],         # maximum number of overlapping sound events [1, 2, 3]
+        train_split=[1],     # Cross validation split [1, 2, 3]
+        val_split=[2],
+        test_split=[3],
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
         debug_load_few_files=False,
