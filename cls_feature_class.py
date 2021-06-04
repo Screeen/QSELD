@@ -12,6 +12,8 @@ from IPython import embed
 import matplotlib.pyplot as plot
 plot.switch_backend('agg')
 
+import logging
+logger = logging.getLogger(__name__)
 
 class FeatureClass:
     def __init__(self, dataset='ansim', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
@@ -24,19 +26,19 @@ class FeatureClass:
         elif dataset == 'resim':
             self._base_folder = os.path.join(datasets_dir, 'resim')
         elif dataset == 'cansim':
-            assert(false)
+            assert False
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata/')
         elif dataset == 'cresim':
-            assert (false)
+            assert False
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata_echoic/')
         elif dataset == 'real':
-            assert (false)
+            assert False
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
         elif dataset == 'mansim':
-            assert (false)
+            assert False
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'moving_sound_events_foa/')
         elif dataset == 'mreal':
-            assert (false)
+            assert False
             self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_movingdata_foa/')
 
         # Output directories
@@ -62,8 +64,8 @@ class FeatureClass:
         self._desc_dir = os.path.join(self._base_folder, 'desc_ov{}_split{}{}'.format(self._ov,
                                                                                       self._split,
                                                                                       desc_extra_name))
-        print(f"self._aud_dir {self._aud_dir}")
-        print(f"self._desc_dir {self._desc_dir}")
+        logger.info(f"self._aud_dir {self._aud_dir}")
+        logger.info(f"self._desc_dir {self._desc_dir}")
 
         self.feat_formatted_name = 'ov{}_split{}_{}db_nfft{}_'.format(self._ov, self._split, self._db, self._nfft)
         self.label_formatted_name = 'ov{}_split{}_nfft{}_'.format(self._ov, self._split, self._nfft)
@@ -124,10 +126,10 @@ class FeatureClass:
         self._default_ele = 60
 
         if self._default_azi in self._azi_list:
-            print('ERROR: chosen default_azi value {} should not exist in azi_list'.format(self._default_azi))
+            logger.error('ERROR: chosen default_azi value {} should not exist in azi_list'.format(self._default_azi))
             exit()
         if self._default_ele in self._ele_list:
-            print('ERROR: chosen default_ele value {} should not exist in ele_list'.format(self._default_ele))
+            logger.error('ERROR: chosen default_ele value {} should not exist in ele_list'.format(self._default_ele))
             exit()
 
         self._audio_max_len_samples = 30 * self._fs  # TODO: Fix the audio synthesis code to always generate 30s of
@@ -167,7 +169,7 @@ class FeatureClass:
         if not os.path.exists(os.path.join(self._feat_dir, audio_filename+'.npy')):
             audio_in, fs = self._load_audio(os.path.join(self._aud_dir, audio_filename))
             audio_spec = self._spectrogram(audio_in)
-            # print(audio_spec.shape)
+            # logger.info(audio_spec.shape)
             np.save(os.path.join(self._feat_dir, audio_filename), audio_spec.reshape(self._max_frames, -1))
 
     # OUTPUT LABELS
@@ -338,8 +340,8 @@ class FeatureClass:
                 azi_label[start_frame:end_frame, class_ind] = azi_ang
                 ele_label[start_frame:end_frame, class_ind] = ele_ang
             else:
-                # print(start_xyz, direction_xyz)
-                print('bad_angle {} {}'.format(azi_ang, ele_ang))
+                # logger.info(start_xyz, direction_xyz)
+                logger.info('bad_angle {} {}'.format(azi_ang, ele_ang))
         doa_label_regr = np.concatenate((azi_label, ele_label), axis=1)
         return doa_label_regr
 
@@ -358,8 +360,8 @@ class FeatureClass:
             doa_label = self._get_doa_labels_regr(_desc_file)
             label_mat = np.concatenate((se_label, doa_label), axis=1)
         else:
-            print("The supported modes are 'regr', you provided {}".format(self._mode))
-        print(label_mat.shape)
+            logger.info("The supported modes are 'regr', you provided {}".format(self._mode))
+        logger.info(label_mat.shape)
         np.save(os.path.join(self._label_dir, label_filename), label_mat)
 
     # ------------------------------- EXTRACT FEATURE AND PREPROCESS IT -------------------------------
@@ -369,12 +371,12 @@ class FeatureClass:
         utils.create_folder(self._feat_dir)
 
         # extraction starts
-        print('Extracting spectrogram:')
-        print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tfeat_dir {}'.format(
+        logger.info('Extracting spectrogram:')
+        logger.info('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tfeat_dir {}'.format(
             self._aud_dir, self._desc_dir, self._feat_dir))
 
         for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
-            print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
+            logger.info('file_cnt {}, file_name {}'.format(file_cnt, file_name))
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
             self._extract_spectrogram_for_file(wav_filename)
 
@@ -386,15 +388,15 @@ class FeatureClass:
         normalized_features_wts_file = self.get_normalized_wts_file(extra)
 
         # pre-processing starts
-        print('Estimating weights for normalizing feature files:')
-        print('\t\tfeat_dir {}'.format(self._feat_dir))
+        logger.info('Estimating weights for normalizing feature files:')
+        logger.info('\t\tfeat_dir {}'.format(self._feat_dir))
 
         if not os.path.exists(normalized_features_wts_file):
             spec_scaler = preprocessing.StandardScaler()
             train_cnt = 0
             for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
                 if 'test' not in file_name:
-                    print(file_cnt, train_cnt, file_name)
+                    logger.info(file_cnt, train_cnt, file_name)
                     feat_file = np.load(os.path.join(self._feat_dir, file_name))
                     spec_scaler = spec_scaler.partial_fit(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
                     del feat_file
@@ -404,10 +406,10 @@ class FeatureClass:
                 normalized_features_wts_file
             )
 
-        print('Normalizing feature files:')
+        logger.info('Normalizing feature files:')
         fitted_scaler = joblib.load(normalized_features_wts_file) # load weights again using this command
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            print(file_cnt, file_name)
+            logger.info(file_cnt, file_name)
             if not os.path.exists(os.path.join(self._feat_dir_norm, file_name)):
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 feat_file = fitted_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
@@ -416,7 +418,7 @@ class FeatureClass:
                     feat_file
                 )
                 del feat_file
-        print('normalized files written to {} folder and the scaler to {}'.format(
+        logger.info('normalized files written to {} folder and the scaler to {}'.format(
             self._feat_dir_norm, normalized_features_wts_file))
 
     def normalize_features(self, extraname=''):
@@ -427,14 +429,14 @@ class FeatureClass:
         normalized_features_wts_file = self.get_normalized_wts_file()
 
         # pre-processing starts
-        print('Estimating weights for normalizing feature files:')
-        print('\t\tfeat_dir {}'.format(self._feat_dir))
+        logger.info('Estimating weights for normalizing feature files:')
+        logger.info('\t\tfeat_dir {}'.format(self._feat_dir))
 
         spec_scaler = joblib.load(normalized_features_wts_file)
-        print('Normalizing feature files:')
+        logger.info('Normalizing feature files:')
         # spec_scaler = joblib.load(normalized_features_wts_file) #load weights again using this command
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-                print(file_cnt, file_name)
+                logger.info(file_cnt, file_name)
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 feat_file = spec_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))
                 np.save(
@@ -442,7 +444,7 @@ class FeatureClass:
                     feat_file
                 )
                 del feat_file
-        print('normalized files written to {} folder and the scaler to {}'.format(
+        logger.info('normalized files written to {} folder and the scaler to {}'.format(
             self._feat_dir_norm, normalized_features_wts_file))
 
     # ------------------------------- EXTRACT LABELS AND PREPROCESS IT -------------------------------
@@ -451,13 +453,13 @@ class FeatureClass:
         self._mode = mode
         self._weakness = weakness
 
-        print('Extracting spectrogram and labels:')
-        print('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tlabel_dir {}'.format(
+        logger.info('Extracting spectrogram and labels:')
+        logger.info('\t\taud_dir {}\n\t\tdesc_dir {}\n\t\tlabel_dir {}'.format(
             self._aud_dir, self._desc_dir, self._label_dir))
         utils.create_folder(self._label_dir)
 
         for file_cnt, file_name in enumerate(os.listdir(self._desc_dir)):
-            print('file_cnt {}, file_name {}'.format(file_cnt, file_name))
+            logger.info('file_cnt {}, file_name {}'.format(file_cnt, file_name))
             wav_filename = '{}.wav'.format(file_name.split('.')[0])
             desc_file = self._read_desc_file(file_name)
             self._get_labels_for_file(wav_filename, desc_file)

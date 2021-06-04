@@ -1,7 +1,6 @@
 import os
 from utils import list_to_string
 
-
 def make_list(x):
     return x if isinstance(x, list) else [x]
 

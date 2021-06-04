@@ -22,6 +22,10 @@ import datetime
 import keras_model_giusenso
 import keras.backend as K
 
+import logging
+logger = logging.getLogger(__name__)
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+
 from utils import list_to_string
 
 plot.switch_backend('agg')
@@ -30,7 +34,7 @@ np.set_printoptions(precision=1, suppress=True, floatmode='fixed')
 
 
 def collect_test_labels(data_generator, data_shape, classification_mode, quick_test):
-    print(f"Collecting ground truth for test data")
+    logger.info(f"Collecting ground truth for test data")
     max_nb_batch = data_generator.get_total_batches_in_data()
     nb_batch = min(2, max_nb_batch) if quick_test else max_nb_batch
 
@@ -38,12 +42,12 @@ def collect_test_labels(data_generator, data_shape, classification_mode, quick_t
     gt_sed = np.zeros((nb_batch * batch_size, data_shape[0][1], data_shape[0][2]))
     gt_doa = np.zeros((nb_batch * batch_size, data_shape[0][1], data_shape[1][2]))
 
-    print(f"gt_sed.shape: {gt_sed.shape}")
-    print(f"gt_doa.shape: {gt_doa.shape}")
-    print("nb_batch in test: {}".format(nb_batch))
+    logger.info(f"gt_sed.shape: {gt_sed.shape}")
+    logger.info(f"gt_doa.shape: {gt_doa.shape}")
+    logger.info("nb_batch in test: {}".format(nb_batch))
     cnt = 0
     for _, tmp_label in data_generator.generate():
-        print(f"Batch {cnt}")
+        logger.info(f"Batch {cnt}")
         gt_sed_batch = tmp_label[0] # 16, 512, 11 - batch size, fftsize, ...
         gt_doa_batch = tmp_label[1] # 16, 512, 33 - batch size, fftsize, ...
         gt_sed[cnt * batch_size : (cnt + 1) * batch_size, ...] = gt_sed_batch
@@ -90,17 +94,17 @@ def predict_single_batch(model, data_gen_train):
 
     for batch_idx in (0, 1, 2):
         for temporal_idx in (100, 101, 102):
-            print()
-            print(f"batch idx {batch_idx}")
+            logger.info()
+            logger.info(f"batch idx {batch_idx}")
             gt_sed = batch[1][0][batch_idx][temporal_idx]
             gt_doa = batch[1][1][batch_idx][temporal_idx]
             pred_sed = pred[0][batch_idx][temporal_idx]
             pred_doa = pred[1][batch_idx][temporal_idx]
 
-            print(f"pred_sed {pred_sed}")
-            print(f"gt_sed {gt_sed}")
-            print(f"pred_doa {pred_doa}")
-            print(f"gt_doa {gt_doa}")
+            logger.info(f"pred_sed {pred_sed}")
+            logger.info(f"gt_sed {gt_sed}")
+            logger.info(f"pred_doa {pred_doa}")
+            logger.info(f"gt_doa {gt_doa}")
 
 
 def collect_ground_truth(data_gen, params):
@@ -113,7 +117,7 @@ def collect_ground_truth(data_gen, params):
 
 
 def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name="unique_name"):
-    print("Train function called")
+    logger.info("Train function called")
     sed_gt, doa_gt = collect_ground_truth(data_gen_val, params)
 
     best_metric = 99999
@@ -132,7 +136,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
     K.clear_session()
 
     for epoch_cnt in range(nb_epoch):
-        print(f"Iteration {epoch_cnt}/{nb_epoch}")
+        logger.info(f"Iteration {epoch_cnt}/{nb_epoch}")
         start = time.time()
         hist = model.fit(
             x=data_gen_train.generate(),
@@ -164,8 +168,17 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                 doa_pred = pred[1]
                 num_classes = sed_pred.shape[-1]
                 num_dims_xyz = 3
+
+                logger.info(f"doa_pred.shape {doa_pred.shape}")
                 if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
                     doa_pred = doa_pred[..., num_classes:]
+                    logger.info(f"doa_pred.shape {doa_pred.shape}")
+
+                logger.info(f"doa_gt.shape {doa_gt.shape}")
+                if doa_gt.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
+                    doa_gt = doa_gt[..., num_classes:]
+                    logger.info(f"doa_gt.shape {doa_gt.shape}")
+
                 doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
                 sed_loss[epoch_cnt, :] = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
@@ -200,7 +213,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                 model.save(model_path)
                 patience_cnt = 0
 
-            print(
+            logger.info(
                 'epoch_cnt: %d, time: %.2fs, tr_loss: %.2f, val_loss: %.2f, '
                 'F1_overall: %.2f, ER_overall: %.2f, '
                 'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
@@ -226,22 +239,22 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         model.save(model_path)
 
     else:
-        print('best_conf_mat : {}'.format(best_conf_mat))
-        print('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
-        print('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
-        print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
+        logger.info('best_conf_mat : {}'.format(best_conf_mat))
+        logger.info('best_conf_mat_diag : {}'.format(np.diag(best_conf_mat)))
+        logger.info('saved model for the best_epoch: {} with best_metric: {},  '.format(best_epoch, best_metric))
+        logger.info('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
             doa_loss[best_epoch, 1], doa_loss[best_epoch, 2], doa_loss[best_epoch, 5] / float(sed_gt.shape[0])))
-        print(
+        logger.info(
             'SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[best_epoch, 1], sed_loss[best_epoch, 0]))
 
     np.save(os.path.join(log_dir, 'training-loss'), [tr_loss, val_loss])
-    print(f'unique_name: {unique_name}')
-    print(f'log_dir: {log_dir}')
+    logger.info(f'unique_name: {unique_name}')
+    logger.info(f'log_dir: {log_dir}')
     # predict_single_batch(model, data_gen_train)
 
 
 def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name"):
-    print("EVALUATE function called")
+    logger.info("EVALUATE function called")
     sed_gt, doa_gt = collect_ground_truth(data_gen_test, params)
 
     predict_single_batch(model, data_gen_test)
@@ -281,7 +294,7 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
         1 - (doa_loss[5] / float(doa_gt.shape[0]))]
     )
 
-    print(
+    logger.info(
         'F1_overall: %.2f, ER_overall: %.2f, '
         'doa_error_gt: %.2f, doa_error_pred: %.2f, good_pks_ratio:%.2f, '
         'error_metric: %.2f' %
@@ -292,12 +305,12 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
         )
     )
 
-    print('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
+    logger.info('DOA Metrics: doa_loss_gt: {}, doa_loss_pred: {}, good_pks_ratio: {}'.format(
         doa_loss[1], doa_loss[2], doa_loss[5] / float(sed_gt.shape[0])))
-    print(
+    logger.info(
         'SED Metrics: F1_overall: {}, ER_overall: {}'.format(sed_loss[1], sed_loss[0]))
 
-    print('unique_name: {} '.format(unique_name))
+    logger.info('unique_name: {} '.format(unique_name))
 
 
 def main(argv):
@@ -310,17 +323,16 @@ def main(argv):
                                 (default) uses default parameters
     
     if len(argv) != 4:
-        print('\n\n')
-        print('-------------------------------------------------------------------------------------------------------')
-        print('The code expected three inputs')
-        print('\t>> python seld.py <job-id> <train-test> <task-id>')
-        print('\t\t<job-id> is a unique identifier which is used for output filenames (models, training plots). '
+        logger.info('\n\n')
+        logger.info('-------------------------------------------------------------------------------------------------------')
+        logger.info('The code expected three inputs')
+        logger.info('\t>> python seld.py <job-id> <train-test> <task-id>')
+        logger.info('\t\t<job-id> is a unique identifier which is used for output filenames (models, training plots). '
               'You can use any number or string for this.')
-        print('\t\t<task-id> is used to choose the user-defined parameter set from parameter.py')
-        print('Using default inputs for now')
-        print('-------------------------------------------------------------------------------------------------------')
-        print('\n\n')
-    """
+        logger.info('\t\t<task-id> is used to choose the user-defined parameter set from parameter.py')
+        logger.info('Using default inputs for now')
+        logger.info('-------------------------------------------------------------------------------------------------------')
+        logger.info('\n\n')
 
     job_id = 1 if len(argv) < 2 else argv[1]
 
@@ -329,7 +341,7 @@ def main(argv):
     params = parameter.get_params(task_id)
 
     isTraining = True if len(argv) < 4 else (True if argv[3] == 'train' else False)
-    print(f"isTraining {isTraining}")
+    logger.info(f"isTraining {isTraining}")
 
     log_dir_name = None if len(argv) < 5 else argv[4]
     if not log_dir_name and not isTraining:
@@ -349,9 +361,14 @@ def main(argv):
 
     log_dir = os.path.join(model_dir, unique_name, log_dir_name)
 
-    print(f"log_dir {log_dir}")
+
     utils.create_folder(log_dir)
-    print("unique_name: {}\n".format(unique_name))
+
+    utils.setup_logger(log_dir)
+    logger.info(f"log_dir {log_dir}")
+    logger.info("unique_name: {}\n".format(unique_name))
+
+    utils.copy_source_code(log_dir)
 
     data_gen_train = None
     data_gen_val = None
@@ -364,7 +381,7 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format']
+            data_format=params['data_format'], params=params
         )
 
         data_gen_val = cls_data_generator.DataGenerator(
@@ -374,7 +391,7 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format']
+            data_format=params['data_format'], params=params
         )
     else:
         data_gen_test = cls_data_generator.DataGenerator(
@@ -384,12 +401,12 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format']
+            data_format=params['data_format'], params=params
         )
 
     data_gen_for_shapes = data_gen_train if isTraining else data_gen_test
     data_in, data_out = data_gen_for_shapes.get_data_sizes()
-    print(
+    logger.info(
         'FEATURES:\n'
         '\tdata_in: {}\n'
         '\tdata_out: {}\n'.format(
@@ -402,7 +419,7 @@ def main(argv):
     # sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
     # doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
 
-    print(
+    logger.info(
         'MODEL:\n'
         '\tdropout_rate: {}\n'
         '\tCNN: nb_cnn_filt: {}, pool_size{}\n'

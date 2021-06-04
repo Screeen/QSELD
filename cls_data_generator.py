@@ -9,13 +9,18 @@ from IPython import embed
 from collections import deque
 import random
 
+import logging
+logger = logging.getLogger(__name__)
 
 class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False, debug_load_few_files=False, data_format='channels_first'
+            azi_only=False, debug_load_few_files=False, data_format='channels_first', params=None
     ):
+        if params is None:
+            params = {}
+        self.params = params
         self._datagen_mode = datagen_mode
         self._classifier_mode = classifier_mode
         self._batch_size = batch_size
@@ -48,19 +53,18 @@ class DataGenerator(object):
 
         self._nb_total_batches = int(np.floor((len(self._filenames_list) * self._nb_frames_file /
                                                float(self._seq_len * self._batch_size))))
-        print(f"Data generator {datagen_mode}: {self._nb_total_batches} batches per epoch.")
+        logger.info(f"Data generator {datagen_mode}: {self._nb_total_batches} batches per epoch.")
         assert (self._nb_total_batches > 1)
 
-        print(
+        logger.info(
             'Datagen_mode: {}, nb_files: {}, nb_classes:{}\n'
             'nb_frames_file: {}, feat_len: {}, nb_ch: {}, label_len:{}\n'.format(
                 self._datagen_mode, len(self._filenames_list),  self._nb_classes,
                 self._nb_frames_file, self._feat_len, self._2_nb_ch, self._label_len
                 )
-
         )
 
-        print(
+        logger.info(
             'Dataset: {}, ov: {}, split: {}\n'
             'batch_size: {}, seq_len: {}, shuffle: {}\n'
             'label_dir: {}\n '
@@ -77,9 +81,13 @@ class DataGenerator(object):
         else:
             feat_shape = (self._batch_size, self._seq_len, self._feat_len, self._2_nb_ch)
 
+        doa_shape = (self._batch_size, self._seq_len, self._nb_classes*(2 if self._azi_only else 3))
+        if self.params['doa_objective'] == 'masked_mse':  # add sed ground truth for masking
+            doa_shape = (self._batch_size, self._seq_len, self._nb_classes + self._nb_classes*(2 if self._azi_only else 3))
+
         label_shape = [
             (self._batch_size, self._seq_len, self._nb_classes),
-            (self._batch_size, self._seq_len, self._nb_classes*(2 if self._azi_only else 3))
+            doa_shape
         ]
         return feat_shape, label_shape
 
@@ -183,10 +191,11 @@ class DataGenerator(object):
                         z[no_ele_ind] = 0
                         y[no_ele_ind] = 0
 
-                    label = [
-                        label[:, :, :self._nb_classes],  # SED labels
-                        np.concatenate((x, y, z), -1)    # DOA Cartesian labels
-                         ]
+                    sed_gt = label[:, :, :self._nb_classes]  # SED labels
+                    doa_gt = np.concatenate((x, y, z), -1)  # DOA Cartesian labels
+                    if self.params['doa_objective'] == 'masked_mse': # add sed ground truth for masking
+                        doa_gt = np.concatenate((sed_gt, doa_gt), -1)  # DOA Cartesian labels
+                    label = [sed_gt, doa_gt]
 
                 yield feat, label
 
@@ -204,7 +213,7 @@ class DataGenerator(object):
                 data = data[:-(data.shape[0] % self._seq_len), :, :]
             data = data.reshape((data.shape[0] // self._seq_len, self._seq_len, data.shape[1], data.shape[2]))
         else:
-            print('ERROR: Unknown data dimensions: {}'.format(data.shape))
+            logger.error('ERROR: Unknown data dimensions: {}'.format(data.shape))
             exit()
         return data
 
@@ -221,7 +230,7 @@ class DataGenerator(object):
             tmp = np.zeros((in_shape[0], 1, in_shape[1], in_shape[2], in_shape[3]))
             tmp[:, 0, :, :, :] = data
         else:
-            print('ERROR: The input should be a 3D matrix but it seems to have dimensions: {}'.format(in_shape))
+            logger.error('ERROR: The input should be a 3D matrix but it seems to have dimensions: {}'.format(in_shape))
             exit()
         return tmp
 
