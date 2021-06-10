@@ -2,12 +2,11 @@
 # A wrapper script that trains the SELDnet. The training stops when the SELD error (check paper) stops improving.
 #
 
-# How to Force Keras to use CPU to Run Script?
-# import os
-# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-# os.environ["CUDA_VISIBLE_DEVICES"] = ""
-
+# Use GPU
 import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 import sys
 import numpy as np
 import matplotlib.pyplot as plot
@@ -94,8 +93,7 @@ def predict_single_batch(model, data_gen_train):
 
     for batch_idx in (0, 1, 2):
         for temporal_idx in (100, 101, 102):
-            logger.info()
-            logger.info(f"batch idx {batch_idx}")
+            logger.debug(f"batch idx {batch_idx}")
             gt_sed = batch[1][0][batch_idx][temporal_idx]
             gt_doa = batch[1][1][batch_idx][temporal_idx]
             pred_sed = pred[0][batch_idx][temporal_idx]
@@ -151,7 +149,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
-        if params['debug_load_few_files']:
+        if (params['debug_load_few_files']) and (epoch_cnt % 25 != 0) and (epoch_cnt != nb_epoch - 1):
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
@@ -205,8 +203,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                            epoch_metric_loss)
 
             patience_cnt += 1
-            if (epoch_metric_loss[epoch_cnt] < best_metric and not params['debug_load_few_files']) or (
-                    epoch_cnt % 50 == 0):
+            if (epoch_metric_loss[epoch_cnt] < best_metric):
                 best_metric = epoch_metric_loss[epoch_cnt]
                 best_conf_mat = conf_mat
                 best_epoch = epoch_cnt
@@ -333,7 +330,7 @@ def main(argv):
         logger.info('Using default inputs for now')
         logger.info('-------------------------------------------------------------------------------------------------------')
         logger.info('\n\n')
-
+	"""
     job_id = 1 if len(argv) < 2 else argv[1]
 
     # use parameter set defined by user
@@ -473,3 +470,4 @@ if __name__ == "__main__":
         sys.exit(main(sys.argv))
     except (ValueError, IOError) as e:
         sys.exit(e)
+

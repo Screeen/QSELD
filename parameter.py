@@ -34,7 +34,7 @@ def get_params(argv):
         nb_epochs=500,             # Train for maximum epochs
 
         epochs_per_iteration=2,
-        doa_objective='mse',
+        doa_objective='masked_mse',
         recurrent_type='tcn_new',  # TCN, GRU, tcn_new
 
         # TCN
@@ -74,8 +74,7 @@ def get_params(argv):
     elif argv == '888':
         logger.info("OVERFIT MODE\n")
         params['quick_test'] = True
-        params['nb_epochs'] = 250
-        params['batch_size'] = 4
+        params['nb_epochs'] = 50
         params['debug_load_few_files'] = True
         params['spatial_dropout_rate'] = 0
         params['dropout_rate'] = 0
@@ -89,9 +88,8 @@ def get_params(argv):
     # Different datasets
     elif argv == '2':  # anechoic simulated Ambisonic data set
         params['dataset'] = 'ansim'
-        params['sequence_length'] = 256
-        params['batch_size'] = 8
-        # params['sequence_length'] = 512
+        params['sequence_length'] = 512
+        params['nb_epochs'] = 250
 
     elif argv == '3':  # reverberant simulated Ambisonic data set
         params['dataset'] = 'resim'

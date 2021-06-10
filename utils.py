@@ -108,9 +108,9 @@ def copy_source_code(exp_folder):
     dst = os.path.join(exp_folder, 'Source_code')
 
     # Make sure the destination defaul_folder does not exist.
-    if os.path.exists(dst) and os.path.isdir(dst):
-        logger.info('Removing existing directory "{}"'.format(dst))
-        rmtree(dst, ignore_errors=False)
+    if not (os.path.exists(dst) and os.path.isdir(dst)):
+        #logger.info('Removing existing directory "{}"'.format(dst))
+        #rmtree(dst, ignore_errors=False)
 
-    logger.info('Copying source code to "{}"'.format(dst))
-    copytree(src, dst, ignore=include_patterns('quaternion', '*.py', '*.ipynb'))
+        logger.info('Copying source code to "{}"'.format(dst))
+        copytree(src, dst, ignore=include_patterns('quaternion', '*.py', '*.ipynb'))
