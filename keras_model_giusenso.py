@@ -11,7 +11,6 @@ from keras.layers.wrappers import TimeDistributed
 from keras.optimizers import Adam
 import keras
 keras.backend.set_image_data_format('channels_first')
-from IPython import embed
 
 
 # SELD-TCN MODEL :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

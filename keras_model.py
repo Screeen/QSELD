@@ -327,9 +327,9 @@ def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
 
 
 def load_seld_model(model_file, doa_objective):
-    if doa_objective is 'mse':
+    if doa_objective == 'mse':
         return load_model(model_file)
-    elif doa_objective is 'masked_mse':
+    elif doa_objective == 'masked_mse':
         return load_model(model_file, custom_objects={'masked_mse': masked_mse})
     else:
         logger.error('ERROR: Unknown doa objective: {}'.format(doa_objective))

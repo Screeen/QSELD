@@ -256,21 +256,23 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
 
     predict_single_batch(model, data_gen_test)
 
-    pred = model.predict(
+    dnn_output = model.predict(
         x=data_gen_test.generate(),
         steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
         verbose=2
     )
 
-    sed_pred = evaluation_metrics.reshape_3Dto2D(pred[0]) > 0.5
+    sed_pred = dnn_output[0] > 0.5
+    doa_pred = dnn_output[1]
 
-    doa_pred = pred[1]
     num_classes = sed_pred.shape[-1]
     num_dims_xyz = 3
     if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
-        doa_pred = doa_pred[..., num_classes:]
-        doa_gt = doa_gt[..., num_classes:]
+        sed_mask = np.repeat_elements(sed_pred, 3, -1)
+        doa_pred = doa_pred[..., num_classes:] * sed_mask
+        doa_gt = doa_gt[..., num_classes:] * sed_mask
 
+    sed_pred = evaluation_metrics.reshape_3Dto2D(sed_pred)
     doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
     sed_loss = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,

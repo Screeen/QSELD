@@ -5,7 +5,6 @@
 
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from IPython import embed
 import logging
 logger = logging.getLogger(__name__)
 

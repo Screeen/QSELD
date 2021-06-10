@@ -8,7 +8,6 @@ import scipy.io.wavfile as wav
 import utils
 from sklearn import preprocessing
 import joblib
-from IPython import embed
 import matplotlib.pyplot as plot
 plot.switch_backend('agg')
 
@@ -193,7 +192,7 @@ class FeatureClass:
             desc_file['end'].append(int(np.ceil(float(split_line[2])*self._frame_res)))
             desc_file['ele'].append(int(float(split_line[3])))
             desc_file['azi'].append(int(float(split_line[4])))
-            if self._dataset[0] is 'm':
+            if self._dataset[0] == 'm':
                 if 'real' in self._dataset:
                     desc_file['ang_vel'].append(int(float(split_line[5])))
                     desc_file['dist'].append(float(split_line[6]))
@@ -313,7 +312,7 @@ class FeatureClass:
             nb_frames = end_frame - start_frame
             azi_ang = _desc_file['azi'][i]
             class_ind = self._unique_classes[_desc_file['class'][i]]
-            if self._dataset[0] is 'm':
+            if self._dataset[0] == 'm':
                 if 'real' in self._dataset:
                     se_len_s = nb_frames / self._frame_res
                     azi_trajectory = np.floor(
@@ -355,7 +354,7 @@ class FeatureClass:
 
     def _get_labels_for_file(self, label_filename, _desc_file):
         label_mat = None
-        if self._mode is 'regr':
+        if self._mode == 'regr':
             se_label = self._get_se_labels(_desc_file)
             doa_label = self._get_doa_labels_regr(_desc_file)
             label_mat = np.concatenate((se_label, doa_label), axis=1)
