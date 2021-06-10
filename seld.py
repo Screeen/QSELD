@@ -267,8 +267,12 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
     doa_pred = pred[1]
     num_classes = sed_pred.shape[-1]
     num_dims_xyz = 3
-    if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
+
+    # if using masked mse, trim the first 'num_classes' elements from arrays (SED output)
+    if doa_pred.shape[-1] > num_classes * num_dims_xyz:
         doa_pred = doa_pred[..., num_classes:]
+        doa_gt = doa_pred[..., num_classes:]
+
     doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
     sed_loss = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
@@ -318,7 +322,7 @@ def main(argv):
         first input: job_id - (optional) all the output files will be uniquely represented with this. (default) 1
         second input: task_id - (optional) To chose the system configuration in parameters.py. 
                                 (default) uses default parameters
-    
+
     if len(argv) != 4:
         logger.info('\n\n')
         logger.info('-------------------------------------------------------------------------------------------------------')
@@ -426,7 +430,7 @@ def main(argv):
             params['rnn_size'], params['fnn_size']
         )
     )
-    
+
     model = None
     if isTraining:
         if params['use_quaternions']:
