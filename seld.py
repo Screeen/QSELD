@@ -264,16 +264,16 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
 
     sed_pred = dnn_output[0] > 0.5
     doa_pred = dnn_output[1]
+    sed_pred = evaluation_metrics.reshape_3Dto2D(sed_pred)
+    doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
     num_classes = sed_pred.shape[-1]
     num_dims_xyz = 3
+    import pdb; pdb.set_trace()
     if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
-        sed_mask = np.repeat_elements(sed_pred, 3, -1)
+        sed_mask = np.repeat(sed_pred, 3, -1)
         doa_pred = doa_pred[..., num_classes:] * sed_mask
-        doa_gt = doa_gt[..., num_classes:] * sed_mask
-
-    sed_pred = evaluation_metrics.reshape_3Dto2D(sed_pred)
-    doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
+        doa_gt = doa_gt[..., num_classes:] * sed_mask    
 
     sed_loss = evaluation_metrics.compute_sed_scores(sed_pred, sed_gt,
                                                      data_gen_test.nb_frames_1s())
@@ -461,7 +461,10 @@ def main(argv):
             raise FileNotFoundError(f"test mode but model was not found at {os.path.abspath(model_path)}")
 
     dot_img_file = os.path.join(log_dir, 'model_plot.png')
-    keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+    try:
+        keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+    except ImportError:
+        logger.warning(f"Failed to import pydot, skip plotting")
 
     if isTraining:
         train(model, data_gen_train, data_gen_val, params, log_dir=log_dir, unique_name=unique_name)
