@@ -326,8 +326,6 @@ def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
         sed_concat_doa_ground_truth - sed_concat_doa_model_out) * sed_out_mask)) / keras.backend.sum(sed_out_mask)
 
 
-
-
 def load_seld_model(model_file, doa_objective):
     if doa_objective is 'mse':
         return load_model(model_file)

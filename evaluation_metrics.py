@@ -220,6 +220,9 @@ def compute_doa_scores_regr_xyz(pred_doa, gt_doa, pred_sed, gt_sed):
     doa_loss_pred_cnt = 0
     nb_sed = gt_sed.shape[-1]
 
+    logger.debug(f"gt_doa.shape {gt_doa.shape}")
+    logger.debug(f"pred_doa.shape {pred_doa.shape}")
+
     for frame_cnt, sed_frame in enumerate(gt_sed):
         nb_src_gt_list[frame_cnt] = int(np.sum(sed_frame))
         nb_src_pred_list[frame_cnt] = int(np.sum(pred_sed[frame_cnt]))
@@ -231,12 +234,10 @@ def compute_doa_scores_regr_xyz(pred_doa, gt_doa, pred_sed, gt_sed):
             good_frame_cnt = good_frame_cnt + 1
 
         # DOA Loss with respect to groundtruth
-        # logger.info(f"gt_doa.shape {gt_doa.shape}")
         doa_frame_gt_x = gt_doa[frame_cnt][:nb_sed][sed_frame == 1]
         doa_frame_gt_y = gt_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame == 1]
         doa_frame_gt_z = gt_doa[frame_cnt][2 * nb_sed:][sed_frame == 1]
 
-        # logger.info(f"pred_doa.shape {pred_doa.shape}")
         doa_frame_pred_x = pred_doa[frame_cnt][:nb_sed][sed_frame == 1]
         doa_frame_pred_y = pred_doa[frame_cnt][nb_sed:2 * nb_sed][sed_frame == 1]
         doa_frame_pred_z = pred_doa[frame_cnt][2 * nb_sed:][sed_frame == 1]
