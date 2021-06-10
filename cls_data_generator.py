@@ -11,11 +11,14 @@ import random
 import logging
 logger = logging.getLogger(__name__)
 
+debug_load_few_files_num = 6
+
 class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False, debug_load_few_files=False, data_format='channels_first', params=None
+            azi_only=False, debug_load_few_files=False, data_format='channels_first', params=None,
+            load_files_before_after_splitting_point=None
     ):
         if params is None:
             params = {}
@@ -34,7 +37,6 @@ class DataGenerator(object):
         self._debug_load_few_files = debug_load_few_files
         self._data_format = data_format
 
-        self._filenames_list = list()
         self._nb_frames_file = 0     # Assuming number of frames in feat files are the same
         self._feat_len = None
         self._2_nb_ch = 2 * self._feat_cls.get_nb_channels()
@@ -44,7 +46,11 @@ class DataGenerator(object):
         self._nb_classes = len(self._class_dict.keys())
         self._default_azi, self._default_ele = self._feat_cls.get_default_azi_ele_regr()
         self._is_cnn3d_model = cnn3d
-        self._get_label_filenames_sizes()
+
+        self._filenames_list = []
+        self.create_filenames_list(load_files_before_after_splitting_point)
+
+        self.get_feature_label_shapes()
 
         self._batch_seq_len = self._batch_size*self._seq_len
         self._circ_buf_feat = None
@@ -93,24 +99,34 @@ class DataGenerator(object):
     def get_total_batches_in_data(self):
         return self._nb_total_batches
 
-    def _get_label_filenames_sizes(self):
-        file_list = os.listdir(self._label_dir)
+    def create_filenames_list(self, load_files_before_after_splitting_point_):
+        file_list = sorted(os.listdir(self._label_dir))
         if len(file_list) == 0:
             raise FileNotFoundError
         if self._debug_load_few_files:
-            file_list = file_list[:6]
-        for filename in file_list:
-            # if self._datagen_mode in filename:
-            self._filenames_list.append(filename)
+            file_list = file_list[:debug_load_few_files_num]
 
+        for filename in file_list:
+            if self._datagen_mode in filename:
+                self._filenames_list.append(filename)
+        if len(self._filenames_list) == 0:
+            raise FileNotFoundError
+
+        num_files = len(self._filenames_list)
+        split_idx = int(num_files*float(self.params['train_val_split']))
+        if load_files_before_after_splitting_point_ == 'before':
+            self._filenames_list = self._filenames_list[:split_idx]
+        elif load_files_before_after_splitting_point_ == 'after':
+            self._filenames_list = self._filenames_list[split_idx:]
+
+    def get_feature_label_shapes(self):
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))
         self._nb_frames_file = temp_feat.shape[0]
         self._feat_len = temp_feat.shape[1] // self._2_nb_ch
 
         temp_label = np.load(os.path.join(self._label_dir, self._filenames_list[0]))
         self._label_len = temp_label.shape[-1]
-        self._doa_len = (self._label_len - self._nb_classes)//self._nb_classes
-        return
+        self._doa_len = (self._label_len - self._nb_classes) // self._nb_classes
 
     def generate(self):
         """

@@ -12,7 +12,7 @@ def get_params(argv):
         azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
-        dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
+        dataset='resim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
         overlap=[1],         # maximum number of overlapping sound events [1, 2, 3]
         train_split=[1],     # Cross validation split [1, 2, 3]
         val_split=[2],
@@ -20,6 +20,7 @@ def get_params(argv):
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
         debug_load_few_files=False,
+        train_val_split=0.8,
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length

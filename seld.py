@@ -362,14 +362,15 @@ def main(argv):
 
     log_dir = os.path.join(model_dir, unique_name, log_dir_name)
 
-
-    utils.create_folder(log_dir)
+    if isTraining:
+        utils.create_folder(log_dir)
 
     utils.setup_logger(log_dir)
     logger.info(f"log_dir {log_dir}")
     logger.info("unique_name: {}\n".format(unique_name))
 
-    utils.copy_source_code(log_dir)
+    if isTraining:
+        utils.copy_source_code(log_dir)
 
     data_gen_train = None
     data_gen_val = None
@@ -382,17 +383,17 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format'], params=params
+            data_format=params['data_format'], params=params, load_files_before_after_splitting_point='before'
         )
 
         data_gen_val = cls_data_generator.DataGenerator(
             dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
             nfft=params['nfft'],
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-            weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
+            weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format'], params=params
+            azi_only=params['azi_only'], shuffle=True, debug_load_few_files=params['debug_load_few_files'],
+            data_format=params['data_format'], params=params, load_files_before_after_splitting_point='after'
         )
     else:
         data_gen_test = cls_data_generator.DataGenerator(
