@@ -113,11 +113,13 @@ class DataGenerator(object):
             raise FileNotFoundError
 
         num_files = len(self._filenames_list)
+        logger.info(f"Total number of files {num_files}")
         split_idx = int(num_files*float(self.params['train_val_split']))
         if load_files_before_after_splitting_point_ == 'before':
             self._filenames_list = self._filenames_list[:split_idx]
         elif load_files_before_after_splitting_point_ == 'after':
             self._filenames_list = self._filenames_list[split_idx:]
+        logger.info(f"Number of files after splitting {len(self._filenames_list)}")
 
     def get_feature_label_shapes(self):
         temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[0]))

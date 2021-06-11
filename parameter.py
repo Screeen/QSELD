@@ -94,6 +94,7 @@ def get_params(argv):
 
     elif argv == '3':  # reverberant simulated Ambisonic data set
         params['dataset'] = 'resim'
+        params['val_split'] = params['train_split']
         params['sequence_length'] = 256
 
     elif argv == '4':  # anechoic simulated circular-array data set
