@@ -84,6 +84,7 @@ def plot_functions(fig_name, _tr_loss, _val_loss, _sed_loss, _doa_loss, _epoch_m
 
 
 def predict_single_batch(model, data_gen_train):
+
     batch = next(data_gen_train.generate())
     pred = model.predict(
         x=batch[0],
@@ -93,16 +94,15 @@ def predict_single_batch(model, data_gen_train):
 
     for batch_idx in (0, 1, 2):
         for temporal_idx in (100, 101, 102):
-            logger.debug(f"batch idx {batch_idx}")
             gt_sed = batch[1][0][batch_idx][temporal_idx]
             gt_doa = batch[1][1][batch_idx][temporal_idx]
             pred_sed = pred[0][batch_idx][temporal_idx]
             pred_doa = pred[1][batch_idx][temporal_idx]
 
-            logger.info(f"pred_sed {pred_sed}")
-            logger.info(f"gt_sed {gt_sed}")
-            logger.info(f"pred_doa {pred_doa}")
-            logger.info(f"gt_doa {gt_doa}")
+            logger.debug(f"pred_sed {pred_sed}")
+            logger.debug(f"gt_sed   {gt_sed}")
+            logger.debug(f"pred_doa\n {pred_doa}")
+            logger.debug(f"gt_doa  \n {gt_doa}")
 
 
 def collect_ground_truth(data_gen, params):
@@ -149,11 +149,11 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
-        if (params['debug_load_few_files']) and (epoch_cnt % 25 != 0) and (epoch_cnt != nb_epoch - 1):
+        if (params['debug_load_few_files']) and (epoch_cnt % 10 != 0) and (epoch_cnt != nb_epoch - 1):
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
-            # predict_single_batch(model, data_gen_train)
+            predict_single_batch(model, data_gen_train)
 
             pred = model.predict(
                 x=data_gen_val.generate(),
@@ -167,15 +167,13 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                 num_classes = sed_pred.shape[-1]
                 num_dims_xyz = 3
 
-                logger.info(f"doa_pred.shape {doa_pred.shape}")
                 if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
                     doa_pred = doa_pred[..., num_classes:]
-                    logger.info(f"doa_pred.shape {doa_pred.shape}")
+                    logger.debug(f"doa_pred.shape {doa_pred.shape}")
 
-                logger.info(f"doa_gt.shape {doa_gt.shape}")
                 if doa_gt.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
                     doa_gt = doa_gt[..., num_classes:]
-                    logger.info(f"doa_gt.shape {doa_gt.shape}")
+                    logger.debug(f"doa_gt.shape {doa_gt.shape}")
 
                 doa_pred = evaluation_metrics.reshape_3Dto2D(doa_pred)
 
@@ -376,6 +374,7 @@ def main(argv):
     data_gen_val = None
     data_gen_test = None
     if isTraining:
+        load_files_train_splitting_point = None if params['train_val_split'] == 1.0 else 'before'
         data_gen_train = cls_data_generator.DataGenerator(
             dataset=params['dataset'], ov=params['overlap'], split=params['train_split'], db=params['db'],
             nfft=params['nfft'],
@@ -383,18 +382,26 @@ def main(argv):
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
             azi_only=params['azi_only'], debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format'], params=params, load_files_before_after_splitting_point='before'
+            data_format=params['data_format'], params=params,
+            load_files_before_after_splitting_point=load_files_train_splitting_point
         )
 
+        load_files_val_splitting_point = None if params['train_val_split'] == 1.0 else 'after'
         data_gen_val = cls_data_generator.DataGenerator(
             dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
             nfft=params['nfft'],
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], shuffle=True, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format'], params=params, load_files_before_after_splitting_point='after'
+            azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
+            data_format=params['data_format'], params=params,
+            load_files_before_after_splitting_point=load_files_val_splitting_point
         )
+
+        if params['quick_test']:
+            data_gen_val = data_gen_train
+            logger.warning(f"Quick test, replace validation set with training set.")
+
     else:
         data_gen_test = cls_data_generator.DataGenerator(
             dataset=params['dataset'], ov=params['overlap'], split=params['test_split'], db=params['db'],

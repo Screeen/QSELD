@@ -12,7 +12,7 @@ def get_params(argv):
         azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
-        dataset='resim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
+        dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
         overlap=[1],         # maximum number of overlapping sound events [1, 2, 3]
         train_split=[1],     # Cross validation split [1, 2, 3]
         val_split=[2],
@@ -20,11 +20,11 @@ def get_params(argv):
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
         debug_load_few_files=False,
-        train_val_split=0.8,
+        train_val_split=1.0,
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length
-        batch_size=16,               # Batch size (default 16)
+        batch_size=4,               # Batch size (default 16)
         dropout_rate=0.0,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=64,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer
@@ -35,7 +35,7 @@ def get_params(argv):
         nb_epochs=500,             # Train for maximum epochs
 
         epochs_per_iteration=2,
-        doa_objective='masked_mse',
+        doa_objective='mse',
         recurrent_type='tcn_new',  # TCN, GRU, tcn_new
 
         # TCN
@@ -60,20 +60,23 @@ def get_params(argv):
     params['use_quaternions'] = True if 'q' in argv else False
     argv = argv.replace('q', '')
 
+    if params['dataset'] != 'ansim' and params['train_val_split'] < 1.0:
+        logger.warning(f"Overriding validation split! Old {params['val_split']}, new {params['train_split']}")
+        params['val_split'] = params['train_split']
+
     if argv == '1':
-        logger.info("USING DEFAULT PARAMETERS\n")
+        logger.warning("USING DEFAULT PARAMETERS\n")
 
     # Quick test
     elif '999' in argv:
-        logger.info("QUICK TEST MODE\n")
+        logger.warning("QUICK TEST MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 2
         params['debug_load_few_files'] = False
         params['batch_size'] = 4
 
-
     elif argv == '888':
-        logger.info("OVERFIT MODE\n")
+        logger.warning("OVERFIT MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 50
         params['debug_load_few_files'] = True
@@ -94,7 +97,6 @@ def get_params(argv):
 
     elif argv == '3':  # reverberant simulated Ambisonic data set
         params['dataset'] = 'resim'
-        params['val_split'] = params['train_split']
         params['sequence_length'] = 256
 
     elif argv == '4':  # anechoic simulated circular-array data set

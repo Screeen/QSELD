@@ -107,8 +107,8 @@ class DataGenerator(object):
             file_list = file_list[:debug_load_few_files_num]
 
         for filename in file_list:
-            if self._datagen_mode in filename:
-                self._filenames_list.append(filename)
+            # if self._datagen_mode in filename:
+            self._filenames_list.append(filename)
         if len(self._filenames_list) == 0:
             raise FileNotFoundError
 
