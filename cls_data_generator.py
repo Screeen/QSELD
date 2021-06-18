@@ -11,13 +11,11 @@ import random
 import logging
 logger = logging.getLogger(__name__)
 
-debug_load_few_files_num = 6
-
 class DataGenerator(object):
     def __init__(
             self, datagen_mode='train', dataset='ansim', ov=1, split=1, db=30, batch_size=32, seq_len=64,
             shuffle=True, nfft=512, classifier_mode='regr', weakness=0, cnn3d=False, xyz_def_zero=False, extra_name='',
-            azi_only=False, debug_load_few_files=False, data_format='channels_first', params=None,
+            azi_only=False, debug_load_single_batch=False, data_format='channels_first', params=None,
             load_files_before_after_splitting_point=None
     ):
         if params is None:
@@ -34,7 +32,7 @@ class DataGenerator(object):
         self._thickness = weakness
         self._xyz_def_zero = xyz_def_zero
         self._azi_only = azi_only
-        self._debug_load_few_files = debug_load_few_files
+        self._debug_load_single_batch = debug_load_single_batch
         self._data_format = data_format
 
         self._nb_frames_file = 0     # Assuming number of frames in feat files are the same
@@ -56,10 +54,15 @@ class DataGenerator(object):
         self._circ_buf_feat = None
         self._circ_buf_label = None
 
+        if self._debug_load_single_batch:
+            num_files_for_one_batch = int(np.ceil(float(self._batch_seq_len)/self._nb_frames_file))
+            num_files_for_one_batch = max(num_files_for_one_batch, 1)
+            self._filenames_list = self._filenames_list[:num_files_for_one_batch]
+
         self._nb_total_batches = int(np.floor((len(self._filenames_list) * self._nb_frames_file /
-                                               float(self._seq_len * self._batch_size))))
+                                               float(self._batch_seq_len))))
         logger.info(f"Data generator {datagen_mode}: {self._nb_total_batches} batches per epoch.")
-        assert (self._nb_total_batches > 1)
+        assert (self._nb_total_batches >= 1)
 
         logger.info(
             'Datagen_mode: {}, nb_files: {}, nb_classes:{}\n'
@@ -79,6 +82,10 @@ class DataGenerator(object):
                 self._label_dir, self._feat_dir
             )
         )
+
+        logger.debug("Complete file list:")
+        for file_name in self._filenames_list:
+            logger.debug(file_name)
 
     def get_data_sizes(self):
         if self._data_format == 'channels_first':
@@ -103,8 +110,6 @@ class DataGenerator(object):
         file_list = sorted(os.listdir(self._label_dir))
         if len(file_list) == 0:
             raise FileNotFoundError
-        if self._debug_load_few_files:
-            file_list = file_list[:debug_load_few_files_num]
 
         for filename in file_list:
             # if self._datagen_mode in filename:
@@ -147,10 +152,10 @@ class DataGenerator(object):
 
             file_cnt = 0
 
-            assert(self._nb_total_batches > 1)
+            assert(self._nb_total_batches >= 1)
             for i in range(self._nb_total_batches):
 
-                # load feat and label to circular buffer. Always maintain atleast one batch worth feat and label in the
+                # load feat and label to circular buffer. Always maintain at least one batch worth feat and label in the
                 # circular buffer. If not keep refilling it.
                 while len(self._circ_buf_feat) < self._batch_seq_len:
                     temp_feat = np.load(os.path.join(self._feat_dir, self._filenames_list[file_cnt]))

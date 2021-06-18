@@ -12,15 +12,15 @@ def get_params(argv):
         azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
-        dataset='ansim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
+        dataset='resim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
         overlap=[1],         # maximum number of overlapping sound events [1, 2, 3]
         train_split=[1],     # Cross validation split [1, 2, 3]
         val_split=[2],
         test_split=[3],
         db=30,             # SNR of sound events.
         nfft=512,          # FFT/window length size
-        debug_load_few_files=False,
-        train_val_split=1.0,
+        debug_load_single_batch=False,
+        train_val_split=0.8,
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length
@@ -35,7 +35,7 @@ def get_params(argv):
         nb_epochs=500,             # Train for maximum epochs
 
         epochs_per_iteration=2,
-        doa_objective='mse',
+        doa_objective='masked_mse',
         recurrent_type='tcn_new',  # TCN, GRU, tcn_new
 
         # TCN
@@ -64,6 +64,10 @@ def get_params(argv):
         logger.warning(f"Overriding validation split! Old {params['val_split']}, new {params['train_split']}")
         params['val_split'] = params['train_split']
 
+    if params['dataset'] != 'ansim':
+        logger.warning(f"Overriding sequence_length split! Old {params['sequence_length']}, new 256")
+        params['sequence_length'] = 256
+
     if argv == '1':
         logger.warning("USING DEFAULT PARAMETERS\n")
 
@@ -72,14 +76,14 @@ def get_params(argv):
         logger.warning("QUICK TEST MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 2
-        params['debug_load_few_files'] = False
+        params['debug_load_single_batch'] = False
         params['batch_size'] = 4
 
     elif argv == '888':
         logger.warning("OVERFIT MODE\n")
         params['quick_test'] = True
-        params['nb_epochs'] = 50
-        params['debug_load_few_files'] = True
+        params['nb_epochs'] = 100
+        params['debug_load_single_batch'] = True
         params['spatial_dropout_rate'] = 0
         params['dropout_rate'] = 0
 
@@ -87,7 +91,7 @@ def get_params(argv):
         logger.info("Test evaluation\n")
         params['quick_test'] = True
         params['nb_epochs'] = 1
-        params['debug_load_few_files'] = False
+        params['debug_load_single_batch'] = False
 
     # Different datasets
     elif argv == '2':  # anechoic simulated Ambisonic data set

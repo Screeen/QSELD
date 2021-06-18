@@ -104,7 +104,6 @@ def predict_single_batch(model, data_gen_train):
             logger.debug(f"pred_doa\n {pred_doa}")
             logger.debug(f"gt_doa  \n {gt_doa}")
 
-
 def collect_ground_truth(data_gen, params):
     data_in, data_out = data_gen.get_data_sizes()
     gt = collect_test_labels(data_gen, data_out, params['mode'], params['quick_test'])
@@ -149,7 +148,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         tr_loss[epoch_cnt] = hist.history.get('loss')[-1]
         val_loss[epoch_cnt] = hist.history.get('val_loss')[-1]
 
-        if (params['debug_load_few_files']) and (epoch_cnt % 10 != 0) and (epoch_cnt != nb_epoch - 1):
+        if (params['debug_load_single_batch']) and (epoch_cnt % 10 != 0) and (epoch_cnt != nb_epoch - 1):
             plot_functions(os.path.join(log_dir, 'training_curves'), tr_loss, val_loss, sed_loss, doa_loss,
                            epoch_metric_loss)
         else:
@@ -227,10 +226,10 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         # otherwise RAM use increases after every epoch. But is the optimizer state forgotten?
         K.clear_session()
 
-        if params['debug_load_few_files'] and hist.history.get('loss')[-1] < 0.01:
+        if params['debug_load_single_batch'] and hist.history.get('loss')[-1] < 0.01:
             break
 
-    if params['debug_load_few_files']:
+    if params['debug_load_single_batch']:
         model.save(model_path)
 
     else:
@@ -267,7 +266,7 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
 
     num_classes = sed_pred.shape[-1]
     num_dims_xyz = 3
-    import pdb; pdb.set_trace()
+
     if doa_pred.shape[-1] > num_classes * num_dims_xyz:  # true means we are using masked mse
         sed_mask = np.repeat(sed_pred, 3, -1)
         doa_pred = doa_pred[..., num_classes:] * sed_mask
@@ -381,26 +380,27 @@ def main(argv):
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
             weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], debug_load_few_files=params['debug_load_few_files'],
+            azi_only=params['azi_only'], debug_load_single_batch=params['debug_load_single_batch'],
             data_format=params['data_format'], params=params,
             load_files_before_after_splitting_point=load_files_train_splitting_point
         )
 
-        load_files_val_splitting_point = None if params['train_val_split'] == 1.0 else 'after'
-        data_gen_val = cls_data_generator.DataGenerator(
-            dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
-            nfft=params['nfft'],
-            batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
-            weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
-            xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
-            data_format=params['data_format'], params=params,
-            load_files_before_after_splitting_point=load_files_val_splitting_point
-        )
-
-        if params['quick_test']:
-            data_gen_val = data_gen_train
-            logger.warning(f"Quick test, replace validation set with training set.")
+        if not params['quick_test']:
+            load_files_val_splitting_point = None if params['train_val_split'] == 1.0 else 'after'
+            data_gen_val = cls_data_generator.DataGenerator(
+                dataset=params['dataset'], ov=params['overlap'], split=params['val_split'], db=params['db'],
+                nfft=params['nfft'],
+                batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
+                weakness=params['weakness'], datagen_mode='train', cnn3d=params['cnn_3d'],
+                xyz_def_zero=params['xyz_def_zero'],
+                azi_only=params['azi_only'], shuffle=False, debug_load_single_batch=params['debug_load_single_batch'],
+                data_format=params['data_format'], params=params,
+                load_files_before_after_splitting_point=load_files_val_splitting_point
+            )
+        else:
+            import copy
+            data_gen_val = copy.deepcopy(data_gen_train)
+            logger.warning(f"Quick test, validation set is a deep copy of training set.")
 
     else:
         data_gen_test = cls_data_generator.DataGenerator(
@@ -409,7 +409,7 @@ def main(argv):
             batch_size=params['batch_size'], seq_len=params['sequence_length'], classifier_mode=params['mode'],
             weakness=params['weakness'], datagen_mode='test', cnn3d=params['cnn_3d'],
             xyz_def_zero=params['xyz_def_zero'],
-            azi_only=params['azi_only'], shuffle=False, debug_load_few_files=params['debug_load_few_files'],
+            azi_only=params['azi_only'], shuffle=False, debug_load_single_batch=params['debug_load_single_batch'],
             data_format=params['data_format'], params=params
         )
 

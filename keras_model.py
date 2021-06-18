@@ -302,7 +302,9 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
     losses = ['binary_crossentropy', masked_mse] if params['doa_objective'] == 'masked_mse' \
         else ['binary_crossentropy', 'mse']
     model = Model(inputs=spec_start, outputs=[sed, doa])
-    model.compile(optimizer=Adam(), loss=losses, loss_weights=weights, run_eagerly=True)
+
+    eager_execution = True if params['quick_test'] else False
+    model.compile(optimizer=Adam(), loss=losses, loss_weights=weights, run_eagerly=eager_execution)
 
     logger.info(model.summary())
     return model
@@ -317,13 +319,17 @@ def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
     # logger.info(f"doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
     # logger.info(f"sed_concat_doa_model_out.shape {sed_concat_doa_model_out.shape}")
     # logger.info(f"sed_concat_doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
-    sed_out_mask = sed_concat_doa_ground_truth[..., 0:num_classes] >= 0.5
-    sed_out_mask = keras.backend.repeat_elements(sed_out_mask, 4, -1)
+    sed_out_mask = sed_concat_doa_ground_truth[..., :num_classes] >= 0.5
+    zeros_like_sed = keras.backend.zeros_like(sed_out_mask)
+    sed_out_mask = keras.backend.repeat_elements(sed_out_mask, 3, -1)
+    sed_out_mask = Concatenate()([zeros_like_sed, sed_out_mask])
     sed_out_mask = keras.backend.cast(sed_out_mask, 'float32')
 
     # Use the mask to computed mse now. Normalize with the mask weights
-    return keras.backend.sqrt(keras.backend.sum(keras.backend.square(
-        sed_concat_doa_ground_truth - sed_concat_doa_model_out) * sed_out_mask)) / keras.backend.sum(sed_out_mask)
+    return keras.backend.sqrt(
+        keras.backend.sum(
+            keras.backend.square(sed_concat_doa_ground_truth - sed_concat_doa_model_out) * sed_out_mask)) \
+           / keras.backend.sum(sed_out_mask)
 
 
 def load_seld_model(model_file, doa_objective):
