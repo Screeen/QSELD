@@ -20,25 +20,25 @@ class FeatureClass:
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
         datasets_dir = '../datasets'
-        if dataset == 'ansim':
-            self._base_folder = os.path.join(datasets_dir, 'ansim')
-        elif dataset == 'resim':
-            self._base_folder = os.path.join(datasets_dir, 'resim')
-        elif dataset == 'cansim':
-            assert False
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata/')
-        elif dataset == 'cresim':
-            assert False
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata_echoic/')
-        elif dataset == 'real':
-            assert False
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
-        elif dataset == 'mansim':
-            assert False
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'moving_sound_events_foa/')
-        elif dataset == 'mreal':
-            assert False
-            self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_movingdata_foa/')
+        self._base_folder = os.path.join(datasets_dir, dataset)
+        #if dataset == 'ansim':
+        #    self._base_folder = os.path.join(datasets_dir, 'ansim')
+        #elif dataset == 'resim':
+        #    self._base_folder = os.path.join(datasets_dir, 'resim')
+        #elif dataset == 'cansim':
+        #    assert False
+        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata/')
+        #elif dataset == 'cresim':
+        #    assert False
+        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata_echoic/')
+        #elif dataset == 'real':
+        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
+        #elif dataset == 'mansim':
+        #    assert False
+        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'moving_sound_events_foa/')
+        #elif dataset == 'mreal':
+        #    assert False
+        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_movingdata_foa/')
 
         # Output directories
         self._label_dir = None
