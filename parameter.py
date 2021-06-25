@@ -13,7 +13,7 @@ def get_params(argv):
 
         # Dataset loading parameters
         dataset='resim',    # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
-        overlap=[1],         # maximum number of overlapping sound events [1, 2, 3]
+        overlap=[2],         # maximum number of overlapping sound events [1, 2, 3]
         train_split=[1],     # Cross validation split [1, 2, 3]
         val_split=[2],
         test_split=[3],
@@ -24,7 +24,7 @@ def get_params(argv):
 
         # DNN Model parameters
         sequence_length=512,        # Feature sequence length
-        batch_size=4,               # Batch size (default 16)
+        batch_size=16,               # Batch size (default 16)
         dropout_rate=0.0,           # Dropout rate, constant for all layers
         nb_cnn2d_filt=64,           # Number of CNN nodes, constant for each layer
         pool_size=[8, 8, 2],        # CNN pooling, length of list = number of CNN layers, list value = pooling per layer

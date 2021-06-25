@@ -46,7 +46,8 @@ def collect_test_labels(data_generator, data_shape, classification_mode, quick_t
     logger.info("nb_batch in test: {}".format(nb_batch))
     cnt = 0
     for _, tmp_label in data_generator.generate():
-        logger.info(f"Batch {cnt}")
+        if(cnt % 25 == 0):
+            logger.info(f"Batch {cnt}")
         gt_sed_batch = tmp_label[0] # 16, 512, 11 - batch size, fftsize, ...
         gt_doa_batch = tmp_label[1] # 16, 512, 33 - batch size, fftsize, ...
         gt_sed[cnt * batch_size : (cnt + 1) * batch_size, ...] = gt_sed_batch
@@ -346,16 +347,23 @@ def main(argv):
         raise ValueError("Specify log_dir if evaluation mode")
 
     model_dir = os.path.join(os.pardir, 'models')
-    utils.create_folder(model_dir)
+    if isTraining:
+        utils.create_folder(model_dir)
 
     unique_name = '{}_ov{}_train{}_val{}_{}'.format(
         params['dataset'], list_to_string(params['overlap']), list_to_string(params['train_split']),
         list_to_string(params['val_split']),
         job_id)
+    
+    if not isTraining:
+        unique_name = job_id
+        
+    logger.info(f"unique_name: {unique_name}")
 
     dnn_type = 'QTCN' if params['use_quaternions'] else params['recurrent_type']
     if not log_dir_name:
         log_dir_name = "-".join([dnn_type, datetime.datetime.now().strftime("%Y%m%d-%H%M%S")])
+    logger.info(f"log_dir_name: {log_dir_name}")
 
     log_dir = os.path.join(model_dir, unique_name, log_dir_name)
 
