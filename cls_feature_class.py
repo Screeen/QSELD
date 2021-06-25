@@ -1,44 +1,32 @@
 # Contains routines for labels creation, features extraction and normalization
 #
 
-from utils import list_to_string
 import os
-import numpy as np
-import scipy.io.wavfile as wav
-import utils
-from sklearn import preprocessing
+
 import joblib
 import matplotlib.pyplot as plot
+import numpy as np
+import scipy.io.wavfile as wav
+from sklearn import preprocessing
+
+import utils
+from utils import list_to_string
+
 plot.switch_backend('agg')
 
 import logging
+
 logger = logging.getLogger(__name__)
+
 
 class FeatureClass:
     def __init__(self, dataset='ansim', ov=3, split=1, nfft=1024, db=30, wav_extra_name='', desc_extra_name=''):
 
         # TODO: Change the path according to your machine.
         # TODO: It should point to a folder which consists of sub-folders for audio and metada
-        datasets_dir = '../datasets'
+        datasets_dir = os.path.join('..', 'datasets')
         self._base_folder = os.path.join(datasets_dir, dataset)
-        #if dataset == 'ansim':
-        #    self._base_folder = os.path.join(datasets_dir, 'ansim')
-        #elif dataset == 'resim':
-        #    self._base_folder = os.path.join(datasets_dir, 'resim')
-        #elif dataset == 'cansim':
-        #    assert False
-        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata/')
-        #elif dataset == 'cresim':
-        #    assert False
-        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'doa_circdata_echoic/')
-        #elif dataset == 'real':
-        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_data/')
-        #elif dataset == 'mansim':
-        #    assert False
-        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'moving_sound_events_foa/')
-        #elif dataset == 'mreal':
-        #    assert False
-        #    self._base_folder = os.path.join('/proj/asignal/TUT_SELD/', 'tut_seld_movingdata_foa/')
+        logger.info(f"self._base_folder {self._base_folder}")
 
         # Output directories
         self._label_dir = None
@@ -408,7 +396,6 @@ class FeatureClass:
         logger.info('Normalizing feature files:')
         fitted_scaler = joblib.load(normalized_features_wts_file) # load weights again using this command
         for file_cnt, file_name in enumerate(os.listdir(self._feat_dir)):
-            logger.info(file_cnt, file_name)
             if not os.path.exists(os.path.join(self._feat_dir_norm, file_name)):
                 feat_file = np.load(os.path.join(self._feat_dir, file_name))
                 feat_file = fitted_scaler.transform(np.concatenate((np.abs(feat_file), np.angle(feat_file)), axis=1))

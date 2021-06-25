@@ -1,20 +1,21 @@
 """
 Script for util functions
 """
-import os
-import logging
-import sys
-import logging.config
-from shutil import copytree, rmtree
 import fnmatch
-
+import logging
+import logging.config
+import os
+import sys
+from shutil import copytree
 
 logger = logging.getLogger(__name__)
+
 
 def create_folder(folder_name):
     if not os.path.exists(folder_name):
         print('{} folder does not exist, creating it.'.format(folder_name))
         os.makedirs(folder_name)
+
 
 def make_list(x):
     return x if isinstance(x, list) else [x]
@@ -22,7 +23,8 @@ def make_list(x):
 def list_to_string(values):
     return "_".join(str(x) for x in make_list(values))
 
-def setup_logger(experiment_dir):
+
+def setup_logger(experiment_dir=None):
     def exception_hook(exc_type, exc_value, exc_traceback):
         logging.error(
             "Uncaught exception",
@@ -48,14 +50,10 @@ def setup_logger(experiment_dir):
         "[%(asctime)s] [%(name)s] %(message)s",
         "%H:%M:%S")
 
-    # Setup logfile
-    file_log = logging.FileHandler(os.path.join(experiment_dir, 'logFile.log'), mode='a')
-    file_log.setLevel(logging.DEBUG)
-    file_log.setFormatter(formatter)
-
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console_log = logging.StreamHandler(sys.stdout)
-    lev = logging.INFO # if cfg.conf['debug'] > 1 else logging.INFO
+    lev = logging.DEBUG  # if cfg.conf['debug'] > 1 else logging.INFO
+    # lev = logging.INFO # if cfg.conf['debug'] > 1 else logging.INFO
 
     console_log.setLevel(lev)
     console_log.setFormatter(formatter_slim)  # tell the handler to use this format
@@ -65,7 +63,12 @@ def setup_logger(experiment_dir):
     root.handlers = []
 
     # add the handlers to the root logger
-    root.addHandler(file_log)
+    if experiment_dir:
+        file_log = logging.FileHandler(os.path.join(experiment_dir, 'logFile.log'), mode='a')
+        file_log.setLevel(logging.DEBUG)
+        file_log.setFormatter(formatter)
+        root.addHandler(file_log)
+
     root.addHandler(console_log)
     root.setLevel(logging.DEBUG)
 

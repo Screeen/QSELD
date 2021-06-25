@@ -157,7 +157,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
 
             pred = model.predict(
                 x=data_gen_val.generate(),
-                steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
+                steps=data_gen_val.get_total_batches_in_data(),
                 verbose=2
             )
             if params['mode'] == 'regr':
@@ -374,9 +374,6 @@ def main(argv):
     logger.info(f"log_dir {log_dir}")
     logger.info("unique_name: {}\n".format(unique_name))
 
-    if isTraining:
-        utils.copy_source_code(log_dir)
-
     data_gen_train = None
     data_gen_val = None
     data_gen_test = None
@@ -481,6 +478,9 @@ def main(argv):
         keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
     except ImportError:
         logger.warning(f"Failed to import pydot, skip plotting")
+
+    if isTraining:
+        utils.copy_source_code(log_dir)
 
     if isTraining:
         train(model, data_gen_train, data_gen_val, params, log_dir=log_dir, unique_name=unique_name)

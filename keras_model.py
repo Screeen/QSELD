@@ -1,21 +1,23 @@
 #
 # The SELDnet architecture
 #
-import tensorflow as tf
-from tensorflow import keras
-from keras.layers import Bidirectional, Conv2D, MaxPooling2D, Input, MaxPooling3D, Conv3D, merge, Conv1D, Concatenate
-from keras.layers.core import Dense, Activation, Dropout, Reshape, Permute
-from keras.layers import GRU, GRUCell
-from keras.layers.normalization import BatchNormalization
-from keras.models import load_model
-from keras.layers.wrappers import TimeDistributed
-from keras.optimizers import Adam
-import keras.backend as K
-
-from quaternion.qdense import *
-from quaternion.qconv import *
 import logging
+
+from keras.layers import Bidirectional, Conv2D, MaxPooling2D, Conv1D, Concatenate
+from keras.layers import GRU
+from keras.layers.core import Dense, Dropout, Reshape, Permute
+from keras.layers.normalization import BatchNormalization
+from keras.layers.wrappers import TimeDistributed
+from keras.models import load_model
+from keras.optimizers import Adam
+from tensorflow import keras
+
+from quaternion.qconv import *
+
 logger = logging.getLogger(__name__)
+
+global_num_classes = -1
+
 
 class Identity:
     def __call__(self, x, *args, **kwargs):
@@ -23,7 +25,6 @@ class Identity:
 
 
 def temporal_block_gru(inp, num_filters_gru=0, dropout=0, data_in=(), input_data_format='channels_last'):
-
     for idx, nb_rnn_filt in enumerate(num_filters_gru):
         inp = Bidirectional(
             GRU(nb_rnn_filt, activation='tanh', dropout=dropout, recurrent_dropout=dropout,
@@ -263,6 +264,10 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
     keras.backend.set_image_data_format(data_format)
     spec_start = Input(shape=(input_shape[-3], input_shape[-2], input_shape[-1]))
 
+    # set num classes
+    global global_num_classes
+    global_num_classes = params['num_classes']
+
     ##
     spatial_dropout = params['spatial_dropout_rate']
     recurrent_type = params['recurrent_type']
@@ -309,13 +314,14 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
     logger.info(model.summary())
     return model
 
+
 """
 y_gt: shape (..., num_classes*3) for prediction with Cartesian coordinates.
 sed_concat_doa_model_out: shape (..., num_classes + num_classes*3) for prediction with Cartesian coordinates.
 """
 def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
     # SED mask: Use only the predicted DOAs when gt SED > 0.5
-    num_classes = 11  # TODO hardcoded value of number of classes
+    num_classes = global_num_classes
     # logger.info(f"doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
     # logger.info(f"sed_concat_doa_model_out.shape {sed_concat_doa_model_out.shape}")
     # logger.info(f"sed_concat_doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")

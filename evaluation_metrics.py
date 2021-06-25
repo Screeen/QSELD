@@ -79,6 +79,7 @@ def f1_1sec(O, T, block_size):
 # O: output prediction
 # T: ground truth
 def f1_overall_1sec(O, T, block_size):
+    assert (O.shape == T.shape)
     if len(O.shape) == 3:
         O, T = reshape_3Dto2D(O), reshape_3Dto2D(T)
     new_size = int(np.ceil(O.shape[0] / block_size))
@@ -120,6 +121,7 @@ def compute_sed_scores(pred, y, nb_frames_1s):
     -------
     scores : dict
     """
+    assert (pred.shape == y.shape)
     f1o = f1_overall_1sec(pred, y, nb_frames_1s)
     ero = er_overall_1sec(pred, y, nb_frames_1s)
     scores = [ero, f1o]
