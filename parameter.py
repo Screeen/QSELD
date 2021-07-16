@@ -75,7 +75,7 @@ def get_params(argv):
         logger.warning("QUICK TEST MODE\n")
         params['quick_test'] = True
         params['nb_epochs'] = 2
-        params['debug_load_single_batch'] = False
+        params['debug_load_single_batch'] = True
         params['batch_size'] = 4
 
     elif argv == '888':

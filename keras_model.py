@@ -13,6 +13,7 @@ from keras.optimizers import Adam
 from tensorflow import keras
 
 from quaternion.qconv import *
+from quaternion.qrecurrent import QuaternionGRU
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,18 @@ def temporal_block_gru(inp, num_filters_gru=0, dropout=0, data_in=(), input_data
     return inp
 
 
+def temporal_block_qgru(inp, num_filters_gru=0, dropout=0):
+    for idx, nb_rnn_filt in enumerate(num_filters_gru):
+        inp = Bidirectional(
+            QuaternionGRU(nb_rnn_filt, activation='tanh', dropout=dropout, recurrent_dropout=dropout,
+                          return_sequences=True),
+            merge_mode='mul'
+        )(inp)
+    return inp
+
+
 def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropout_rate, use_quaternions_,
                             data_in, input_data_format):
-
     assert (input_data_format == 'channels_last')
     tcn_data_format = 'channels_last'
     num_frames = data_in[1]
@@ -215,7 +225,10 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
     recurrent_type = str.lower(recurrent_type)
     logger.info(f"Temporal block {recurrent_type} begins")
     if recurrent_type == 'gru':
-        input_output = temporal_block_gru(inp, num_filters_gru, dropout, data_in, input_data_format)
+        if use_quaternions_:
+            input_output = temporal_block_qgru(inp, num_filters_gru, dropout)
+        else:
+            input_output = temporal_block_gru(inp, num_filters_gru, dropout, data_in, input_data_format)
     elif recurrent_type == 'tcn':
         input_output = temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropout_rate,
                                                use_quaternions_,

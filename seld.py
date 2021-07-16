@@ -104,6 +104,7 @@ def predict_single_batch(model, data_gen_train):
             logger.debug(f"pred_doa\n {pred_doa}")
             logger.debug(f"gt_doa  \n {gt_doa}")
 
+
 def collect_ground_truth(data_gen, params):
     data_in, data_out = data_gen.get_data_sizes()
     gt = collect_test_labels(data_gen, data_out, params['mode'], params['quick_test'])
