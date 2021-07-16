@@ -61,6 +61,11 @@ def get_params(argv):
     # ########### User defined parameters ##############
     params['use_quaternions'] = True if 'q' in argv else False
     argv = argv.replace('q', '')
+	
+    if 'gru' in argv:
+        params['recurrent_type'] = 'gru' 
+    argv = argv.replace('gru', '')
+    logger.warning("GRU temporal block was set")
 
     if argv == '1':
         logger.warning("USING DEFAULT PARAMETERS\n")
