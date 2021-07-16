@@ -5,7 +5,7 @@
 # Use GPU
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "5"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import sys
 import numpy as np
@@ -205,7 +205,10 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                 best_metric = epoch_metric_loss[epoch_cnt]
                 best_conf_mat = conf_mat
                 best_epoch = epoch_cnt
-                model.save(model_path)
+                try:
+                    model.save(model_path)
+                except:
+                    logger.error("Unable to save the model")                
                 patience_cnt = 0
 
             logger.info(
