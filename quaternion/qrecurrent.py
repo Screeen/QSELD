@@ -183,7 +183,7 @@ class QuaternionLSTMCell(Layer):
             self.bias_o = None
         self.built = True
 
-    def call(self, inputs, states, training=None):
+    def call(self, inputs, mask=None, training=None, initial_state=None):
         if 0 < self.dropout < 1 and self._dropout_mask is None:
             self._dropout_mask = _generate_dropout_mask(
                 K.ones_like(inputs),
@@ -193,7 +193,7 @@ class QuaternionLSTMCell(Layer):
         if (0 < self.recurrent_dropout < 1 and
                 self._recurrent_dropout_mask is None):
             self._recurrent_dropout_mask = _generate_dropout_mask(
-                K.ones_like(states[0]),
+                K.ones_like(initial_state[0]),
                 self.recurrent_dropout,
                 training=training,
                 count=4)
@@ -203,8 +203,8 @@ class QuaternionLSTMCell(Layer):
         # dropout matrices for recurrent units
         rec_dp_mask = self._recurrent_dropout_mask
 
-        h_tm1 = states[0]  # previous memory state
-        c_tm1 = states[1]  # previous carry state
+        h_tm1 = initial_state[0]  # previous memory state
+        c_tm1 = initial_state[1]  # previous carry state
 
         if self.implementation == 1:
             if 0 < self.dropout < 1.:
@@ -477,7 +477,12 @@ class QuaternionLSTM(RNN):
                                              **kwargs)
         self.activity_regularizer = regularizers.get(activity_regularizer)
 
-    def call(self, inputs, mask=None, training=None, initial_state=None):
+    def call(self,
+             inputs,
+             mask=None,
+             training=None,
+             initial_state=None,
+             constants=None):
         self.cell._dropout_mask = None
         self.cell._recurrent_dropout_mask = None
         return super(QuaternionLSTM, self).call(inputs,
@@ -813,8 +818,8 @@ class QuaternionGRUCell(Layer):
                 self.recurrent_bias_h = None
         self.built = True
 
-    def call(self, inputs, states, training=None):
-        h_tm1 = states[0]  # previous memory
+    def call(self, inputs, mask=None, training=None, initial_state=None):
+        h_tm1 = initial_state[0]  # previous memory
 
         if 0 < self.dropout < 1 and self._dropout_mask is None:
             self._dropout_mask = _generate_dropout_mask(
@@ -1147,7 +1152,12 @@ class QuaternionGRU(RNN):
                                             **kwargs)
         self.activity_regularizer = regularizers.get(activity_regularizer)
 
-    def call(self, inputs, mask=None, training=None, initial_state=None):
+    def call(self,
+             inputs,
+             mask=None,
+             training=None,
+             initial_state=None,
+             constants=None):
         self.cell._dropout_mask = None
         self.cell._recurrent_dropout_mask = None
         return super(QuaternionGRU, self).call(inputs,
