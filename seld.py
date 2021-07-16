@@ -34,8 +34,7 @@ np.set_printoptions(precision=1, suppress=True, floatmode='fixed')
 
 def collect_test_labels(data_generator, data_shape, classification_mode, quick_test):
     logger.info(f"Collecting ground truth for test data")
-    max_nb_batch = data_generator.get_total_batches_in_data()
-    nb_batch = min(2, max_nb_batch) if quick_test else max_nb_batch
+    nb_batch = data_generator.get_total_batches_in_data()
 
     batch_size = data_shape[0][0]
     gt_sed = np.zeros((nb_batch * batch_size, data_shape[0][1], data_shape[0][2]))
@@ -256,7 +255,7 @@ def evaluate(model, data_gen_test, params, log_dir=".", unique_name="unique_name
 
     dnn_output = model.predict(
         x=data_gen_test.generate(),
-        steps=2 if params['quick_test'] else data_gen_test.get_total_batches_in_data(),
+        steps=data_gen_test.get_total_batches_in_data(),
         verbose=2
     )
 
