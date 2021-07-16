@@ -138,9 +138,9 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
         start = time.time()
         hist = model.fit(
             x=data_gen_train.generate(),
-            steps_per_epoch=2 if params['quick_test'] else data_gen_train.get_total_batches_in_data(),
+            steps_per_epoch=data_gen_train.get_total_batches_in_data(),
             validation_data=data_gen_val.generate(),
-            validation_steps=2 if params['quick_test'] else data_gen_val.get_total_batches_in_data(),
+            validation_steps=data_gen_val.get_total_batches_in_data(),
             epochs=params['epochs_per_iteration'],
             verbose=2,
             # callbacks=[MyCustomCallback]

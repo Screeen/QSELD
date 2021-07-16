@@ -3,12 +3,15 @@
 # the DOA metrics explained in the SELDnet paper
 #
 
+import logging
+
 import numpy as np
 from sklearn.metrics import confusion_matrix
-import logging
+
 logger = logging.getLogger(__name__)
 
 eps = np.finfo(np.float).eps
+
 
 ###############################################################
 # Scoring functions
@@ -88,7 +91,8 @@ def f1_overall_1sec(O, T, block_size):
     for i in range(0, new_size):
         O_block[i,] = np.max(O[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
         T_block[i,] = np.max(T[int(i * block_size):int(i * block_size + block_size - 1), ], axis=0)
-    return f1_overall_framewise(O_block, T_block)
+    temp = f1_overall_framewise(O_block, T_block)
+    return temp
 
 
 def er_overall_1sec(O, T, block_size):

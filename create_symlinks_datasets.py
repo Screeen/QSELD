@@ -19,7 +19,7 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
             label_dirs.append(dir_name)
 
     label_dirs_filtered = []
-    for file_cnt, dir_name in enumerate(sorted(os.listdir(base_folder))):
+    for file_cnt, dir_name in enumerate(os.listdir(base_folder)):
         if dir_name in label_dirs:
             label_dirs_filtered.append(dir_name)
             print(f"dir_name {dir_name}")
@@ -37,7 +37,7 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
 
     if not symlink_dir_path:
         raise FileNotFoundError
-    
+
     cnt = 0
     for label_dir_filtered in label_dirs_filtered:
         abs_path_filtered = os.path.abspath(os.path.join(base_folder, label_dir_filtered))

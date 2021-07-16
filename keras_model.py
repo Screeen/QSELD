@@ -212,7 +212,7 @@ def temporal_block(inp, num_filters_gru=0, dropout=0, recurrent_type='gru', data
         inp = Reshape((num_frames, -1))(inp)
         logger.info(f"K.int_shape(inp) {K.int_shape(inp)}")
 
-    recurrent_type =str.lower(recurrent_type)
+    recurrent_type = str.lower(recurrent_type)
     logger.info(f"Temporal block {recurrent_type} begins")
     if recurrent_type == 'gru':
         input_output = temporal_block_gru(inp, num_filters_gru, dropout, data_in, input_data_format)
@@ -264,7 +264,7 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
     keras.backend.set_image_data_format(data_format)
     spec_start = Input(shape=(input_shape[-3], input_shape[-2], input_shape[-1]))
 
-    # set num classes
+    # set num classes globally to use it in custom loss function 'masked_mse'
     global global_num_classes
     global_num_classes = params['num_classes']
 
@@ -308,7 +308,9 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
         else ['binary_crossentropy', 'mse']
     model = Model(inputs=spec_start, outputs=[sed, doa])
 
+    # disabling eager execution makes processing quicker
     eager_execution = True if params['quick_test'] else False
+
     model.compile(optimizer=Adam(), loss=losses, loss_weights=weights, run_eagerly=eager_execution)
 
     logger.info(model.summary())
@@ -320,18 +322,17 @@ y_gt: shape (..., num_classes*3) for prediction with Cartesian coordinates.
 sed_concat_doa_model_out: shape (..., num_classes + num_classes*3) for prediction with Cartesian coordinates.
 """
 def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
-    # SED mask: Use only the predicted DOAs when gt SED > 0.5
-    num_classes = global_num_classes
+    # SED mask: Use the predicted DOAs only when gt SED > 0.5
     # logger.info(f"doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
     # logger.info(f"sed_concat_doa_model_out.shape {sed_concat_doa_model_out.shape}")
     # logger.info(f"sed_concat_doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
-    sed_out_mask = sed_concat_doa_ground_truth[..., :num_classes] >= 0.5
+    sed_out_mask = sed_concat_doa_ground_truth[..., :global_num_classes] >= 0.5
     zeros_like_sed = keras.backend.zeros_like(sed_out_mask)
     sed_out_mask = keras.backend.repeat_elements(sed_out_mask, 3, -1)
     sed_out_mask = Concatenate()([zeros_like_sed, sed_out_mask])
     sed_out_mask = keras.backend.cast(sed_out_mask, 'float32')
 
-    # Use the mask to computed mse now. Normalize with the mask weights
+    # Use the mask to computed mse. Normalize with the mask weights
     return keras.backend.sqrt(
         keras.backend.sum(
             keras.backend.square(sed_concat_doa_ground_truth - sed_concat_doa_model_out) * sed_out_mask)) \
