@@ -108,10 +108,12 @@ class DataGenerator(object):
 
     def create_filenames_list(self, load_files_before_after_splitting_point_):
         file_list = sorted(os.listdir(self._label_dir))
+        size_first_file = os.stat(os.path.join(self._label_dir, file_list[0])).st_size
         if len(file_list) == 0:
             raise FileNotFoundError
 
         for filename in file_list:
+            assert(os.stat(os.path.join(self._label_dir,filename)).st_size == size_first_file)
             # if self._datagen_mode in filename:
             self._filenames_list.append(filename)
         if len(self._filenames_list) == 0:

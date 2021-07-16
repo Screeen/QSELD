@@ -19,7 +19,7 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
             label_dirs.append(dir_name)
 
     label_dirs_filtered = []
-    for file_cnt, dir_name in enumerate(os.listdir(base_folder)):
+    for file_cnt, dir_name in enumerate(sorted(os.listdir(base_folder))):
         if dir_name in label_dirs:
             label_dirs_filtered.append(dir_name)
             print(f"dir_name {dir_name}")
@@ -37,22 +37,26 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
 
     if not symlink_dir_path:
         raise FileNotFoundError
-
+    
+    cnt = 0
     for label_dir_filtered in label_dirs_filtered:
         abs_path_filtered = os.path.abspath(os.path.join(base_folder, label_dir_filtered))
-        for file_name in os.listdir(abs_path_filtered):
+        for file_name in sorted(os.listdir(abs_path_filtered)):
             src = os.path.abspath(os.path.join(base_folder, label_dir_filtered, file_name))
-            dst = os.path.abspath(os.path.join(symlink_dir_path, file_name))
-            os.symlink(src, dst)
-            print(src)
-            print(dst)
+            dst = os.path.abspath(os.path.join(symlink_dir_path, file_name+'-'+str(cnt)))
+            if not os.path.exists(dst):
+                os.symlink(src, dst)
+                print(f"Symlink src {src}, dst {dst}")
+                cnt = cnt + 1
+            else:
+                print(f"Dst {dst} already exists, skipping.")
 
 
 datasets_dir = '../datasets'
-dataset = 'resim'
+dataset = 'real'
 base_folder_ = os.path.join(datasets_dir, dataset)
 
-for overlaps in [[1]]:
-    for splits in [[1, 2, 3]]:
+for overlaps in [[1, 2, 3]]:
+    for splits in [[1, 8]]:
         for type in ['label', 'spec']:
             create_symlink_dir(base_folder_, type, overlaps, splits)

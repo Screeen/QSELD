@@ -13,7 +13,7 @@ def get_params(argv):
         azi_only=False,      # Estimate Azimuth only
 
         # Dataset loading parameters
-        dataset='real',  # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
+        dataset='resim',  # Dataset to use: ansim, resim, cansim, cresim, real, mansim or mreal
         overlap=[1],  # maximum number of overlapping sound events [1, 2, 3]
         train_split=[1],  # Cross validation split [1, 2, 3]
         val_split=[2],
@@ -62,20 +62,6 @@ def get_params(argv):
     params['use_quaternions'] = True if 'q' in argv else False
     argv = argv.replace('q', '')
 
-    if params['dataset'] != 'ansim' and params['train_val_split'] < 1.0:
-        logger.warning(f"Overriding validation split! Old {params['val_split']}, new {params['train_split']}")
-        params['val_split'] = params['train_split']
-
-    if params['dataset'] != 'ansim':
-        logger.warning(f"Overriding sequence_length split! Old {params['sequence_length']}, new 256")
-        params['sequence_length'] = 256
-
-    if params['dataset'] == 'real':
-        params['num_classes'] = 8
-    else:
-        params['num_classes'] = 11
-    logger.info(f"Num classes set to {params['num_classes']}")
-
     if argv == '1':
         logger.warning("USING DEFAULT PARAMETERS\n")
 
@@ -112,6 +98,17 @@ def get_params(argv):
         params['sequence_length'] = 256
         params['overlap'] = 2
 
+    elif argv == '3':  # reverberant simulated Ambisonic data set
+        params['dataset'] = 'resim'
+        params['sequence_length'] = 256
+        params['overlap'] = 1
+
+    elif argv == '3all':  # reverberant simulated Ambisonic data set
+        params['dataset'] = 'resim'
+        params['sequence_length'] = 256
+        params['overlap'] = [1,2,3]
+        params['train_split']=[1,2]
+
     elif argv == '4':  # anechoic simulated circular-array data set
         params['dataset'] = 'cansim'
         params['sequence_length'] = 256
@@ -123,6 +120,20 @@ def get_params(argv):
     elif argv == '6':  # real-life Ambisonic data set
         params['dataset'] = 'real'
         params['sequence_length'] = 512
+        params['test_split'] = 9
+
+    elif argv == '6ov2':  # real-life Ambisonic data set
+        params['dataset'] = 'real'
+        params['sequence_length'] = 512
+        params['overlap'] = 2
+        params['test_split'] = 9
+        
+    elif argv == '6all':  # real-life Ambisonic data set
+        params['dataset'] = 'real'
+        params['sequence_length'] = 512
+        params['overlap'] = [1,2,3]
+        params['train_split'] = [1,8]
+        params['test_split'] = [9]
 
     # anechoic circular array data set split 1, overlap 3
     elif argv == '7':  #
@@ -137,8 +148,22 @@ def get_params(argv):
         params['batch_size'] = 32
 
     else:
-        logger.info('ERROR: unknown argument {}'.format(argv))
+        logger.error('ERROR: unknown argument {}'.format(argv))
         exit()
+
+    if params['dataset'] == 'real':
+        params['num_classes'] = 8
+    else:
+        params['num_classes'] = 11
+    logger.warning(f"Num classes set to {params['num_classes']}")
+
+    if params['dataset'] != 'ansim' and params['train_val_split'] < 1.0:
+        logger.warning(f"Overriding validation split! Old {params['val_split']}, new {params['train_split']}")
+        params['val_split'] = params['train_split']
+
+    #if params['dataset'] != 'ansim':
+    #    logger.warning(f"Overriding sequence_length split! Old {params['sequence_length']}, new 256")
+    #    params['sequence_length'] = 256
 
     for key, value in params.items():
         logger.info("{}: {}".format(key, value))

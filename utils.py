@@ -52,8 +52,8 @@ def setup_logger(experiment_dir=None):
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console_log = logging.StreamHandler(sys.stdout)
-    lev = logging.DEBUG  # if cfg.conf['debug'] > 1 else logging.INFO
-    # lev = logging.INFO # if cfg.conf['debug'] > 1 else logging.INFO
+    # lev = logging.DEBUG  # if cfg.conf['debug'] > 1 else logging.INFO
+    lev = logging.INFO # if cfg.conf['debug'] > 1 else logging.INFO
 
     console_log.setLevel(lev)
     console_log.setFormatter(formatter_slim)  # tell the handler to use this format
