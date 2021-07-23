@@ -1,6 +1,7 @@
 models/*
 scripts/*
 jupyter-notebooks/*
+_evaluations/*
 __*
 .idea/*
 
