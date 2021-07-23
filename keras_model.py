@@ -277,10 +277,6 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
     keras.backend.set_image_data_format(data_format)
     spec_start = Input(shape=(input_shape[-3], input_shape[-2], input_shape[-1]))
 
-    # set num classes globally to use it in custom loss function 'masked_mse'
-    global global_num_classes
-    global_num_classes = params['num_classes']
-
     ##
     spatial_dropout = params['spatial_dropout_rate']
     recurrent_type = params['recurrent_type']
@@ -352,6 +348,12 @@ def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
            / keras.backend.sum(sed_out_mask)
 
 
+def set_global_num_classes(params):
+    global global_num_classes
+    global_num_classes = params['num_classes']
+    logger.info(f"Set num classes globally to {global_num_classes} to use it in custom loss function.")
+
+
 def load_seld_model(model_file, doa_objective):
     if doa_objective == 'mse':
         return load_model(model_file)
@@ -360,4 +362,3 @@ def load_seld_model(model_file, doa_objective):
     else:
         logger.error('ERROR: Unknown doa objective: {}'.format(doa_objective))
         exit()
-

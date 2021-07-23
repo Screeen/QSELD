@@ -205,10 +205,7 @@ def train(model, data_gen_train, data_gen_val, params, log_dir=".", unique_name=
                 best_metric = epoch_metric_loss[epoch_cnt]
                 best_conf_mat = conf_mat
                 best_epoch = epoch_cnt
-                try:
-                    model.save(model_path)
-                except:
-                    logger.error("Unable to save the model")                
+                model.save(model_path)
                 patience_cnt = 0
 
             logger.info(
