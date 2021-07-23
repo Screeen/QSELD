@@ -24,7 +24,7 @@ def list_to_string(values):
     return "_".join(str(x) for x in make_list(values))
 
 
-def setup_logger(experiment_dir=None):
+def setup_logger(experiment_dir=None, console_logger_level=logging.INFO):
     def exception_hook(exc_type, exc_value, exc_traceback):
         logging.error(
             "Uncaught exception",
@@ -53,9 +53,9 @@ def setup_logger(experiment_dir=None):
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console_log = logging.StreamHandler(sys.stdout)
     # lev = logging.DEBUG  # if cfg.conf['debug'] > 1 else logging.INFO
-    lev = logging.INFO # if cfg.conf['debug'] > 1 else logging.INFO
+    # lev = logging.INFO # if cfg.conf['debug'] > 1 else logging.INFO
 
-    console_log.setLevel(lev)
+    console_log.setLevel(console_logger_level)
     console_log.setFormatter(formatter_slim)  # tell the handler to use this format
 
     # Root logger

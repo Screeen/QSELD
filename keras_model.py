@@ -273,8 +273,8 @@ def output_block(inp, out_shape, dropout=0, fnn_size=[0], params=None):
 
 def get_model(input_shape, output_shape, dropout_rate, pool_size,
               rnn_size, fnn_size, weights, params, data_format='channels_first'):
+    
     # model definition
-    keras.backend.set_image_data_format(data_format)
     spec_start = Input(shape=(input_shape[-3], input_shape[-2], input_shape[-1]))
 
     ##
@@ -319,7 +319,6 @@ def get_model(input_shape, output_shape, dropout_rate, pool_size,
 
     # disabling eager execution makes processing quicker
     eager_execution = True if params['quick_test'] else False
-
     model.compile(optimizer=Adam(), loss=losses, loss_weights=weights, run_eagerly=eager_execution)
 
     logger.info(model.summary())
@@ -335,6 +334,7 @@ def masked_mse(sed_concat_doa_ground_truth, sed_concat_doa_model_out):
     # logger.info(f"doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
     # logger.info(f"sed_concat_doa_model_out.shape {sed_concat_doa_model_out.shape}")
     # logger.info(f"sed_concat_doa_ground_truth.shape {sed_concat_doa_ground_truth.shape}")
+    
     sed_out_mask = sed_concat_doa_ground_truth[..., :global_num_classes] >= 0.5
     zeros_like_sed = keras.backend.zeros_like(sed_out_mask)
     sed_out_mask = keras.backend.repeat_elements(sed_out_mask, 3, -1)
@@ -354,11 +354,17 @@ def set_global_num_classes(params):
     logger.info(f"Set num classes globally to {global_num_classes} to use it in custom loss function.")
 
 
-def load_seld_model(model_file, doa_objective):
+def load_seld_model(model_file, doa_objective='mse', compileModel=True):
+    logger.info(f"Model_file {model_file}, doa_objective {doa_objective}, compileModel {compileModel}")
+    logger.info(f"global_num_classes {global_num_classes}")
+    
     if doa_objective == 'mse':
-        return load_model(model_file)
+        model = load_model(model_file, compile=compileModel)
     elif doa_objective == 'masked_mse':
-        return load_model(model_file, custom_objects={'masked_mse': masked_mse})
+        model = load_model(model_file, custom_objects={'masked_mse': masked_mse}, compile=compileModel)
     else:
         logger.error('ERROR: Unknown doa objective: {}'.format(doa_objective))
         exit()
+    logger.info("Loaded successfuly")
+    logger.info(model.summary())
+    return model

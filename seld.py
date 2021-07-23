@@ -366,14 +366,16 @@ def main(argv):
     logger.info(f"log_dir_name: {log_dir_name}")
 
     log_dir = os.path.join(model_dir, unique_name, log_dir_name)
+    logger.info(f"log_dir: {log_dir}")
 
     if isTraining:
         utils.create_folder(log_dir)
 
-    utils.setup_logger(log_dir)
+    utils.setup_logger(log_dir, console_logger_level=logging.INFO)
+    
     logger.info(f"log_dir {log_dir}")
     logger.info("unique_name: {}\n".format(unique_name))
-
+    
     data_gen_train = None
     data_gen_val = None
     data_gen_test = None
@@ -428,11 +430,6 @@ def main(argv):
         )
     )
 
-    # data_gen_for_evaluation = data_gen_val if isTraining else data_gen_test
-    # gt = collect_test_labels(data_gen_for_evaluation, data_out, params['mode'], params['quick_test'])
-    # sed_gt = evaluation_metrics.reshape_3Dto2D(gt[0])
-    # doa_gt = evaluation_metrics.reshape_3Dto2D(gt[1])
-
     logger.info(
         'MODEL:\n'
         '\tdropout_rate: {}\n'
@@ -443,6 +440,10 @@ def main(argv):
             params['rnn_size'], params['fnn_size']
         )
     )
+    
+    keras_model.set_global_num_classes(params)
+    keras.backend.set_image_data_format(params['data_format'])
+    logger.info(f"Data format set to {params['data_format']}")
     
     model = None
     if isTraining:
@@ -460,29 +461,24 @@ def main(argv):
                                           rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
                                           weights=params['loss_weights'], data_format=params['data_format'],
                                           params=params)
-
+    
     model_path = os.path.join(log_dir, 'model')
+    logger.info(f"model_path {model_path}")
     if os.path.exists(model_path):
-        print(f"Loading pretrained model from {model_path}")
-        if model:
-            del model
-        model = keras_model.load_seld_model(os.path.abspath(model_path), params['doa_objective'])
-        print(f"Finished loading")
-        print(model.summary())
+        logger.info(f"Loading pretrained model from {model_path}")
+        model = keras_model.load_seld_model(model_path, params['doa_objective'])
     else:
         if not isTraining:
             raise FileNotFoundError(f"test mode but model was not found at {os.path.abspath(model_path)}")
 
-    dot_img_file = os.path.join(log_dir, 'model_plot.png')
     try:
+        dot_img_file = os.path.join(log_dir, 'model_plot.png')
         keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
     except ImportError:
         logger.warning(f"Failed to import pydot, skip plotting")
 
     if isTraining:
         utils.copy_source_code(log_dir)
-
-    if isTraining:
         train(model, data_gen_train, data_gen_val, params, log_dir=log_dir, unique_name=unique_name)
     else:
         evaluate(model, data_gen_test, params, log_dir=log_dir, unique_name=unique_name)

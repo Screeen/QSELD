@@ -139,6 +139,12 @@ def get_params(argv):
         params['overlap'] = [1,2,3]
         params['train_split'] = [1,8]
         params['test_split'] = [9]
+        
+    elif argv == '6testov1':  # real-life Ambisonic data set
+        params['dataset'] = 'real'
+        params['sequence_length'] = 512
+        params['overlap'] = 1
+        params['test_split'] = 9
 
     # anechoic circular array data set split 1, overlap 3
     elif argv == '7':  #
