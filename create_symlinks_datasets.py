@@ -55,7 +55,7 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
 
 
 datasets_dir = '../datasets'
-dataset = 'ansim'
+dataset = 'resim'
 base_folder_ = os.path.join(datasets_dir, dataset)
 
 for type in ['label', 'spec']:

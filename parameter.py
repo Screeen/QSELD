@@ -121,8 +121,11 @@ def get_params(argv):
     elif argv == '3all':  # reverberant simulated Ambisonic data set
         params['dataset'] = 'resim'
         params['sequence_length'] = 256
+        params['nb_epochs'] = 500
         params['overlap'] = [1,2,3]
         params['train_split']=[1,2]
+        params['val_split'] = params['train_split']
+        params['test_split'] = [3]
 
     elif argv == '4':  # anechoic simulated circular-array data set
         params['dataset'] = 'cansim'
