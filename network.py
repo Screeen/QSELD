@@ -46,84 +46,6 @@ def temporal_block_qgru(inp, num_filters_gru=0, dropout=0):
     return inp
 
 
-def temporal_block_guirguis(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropout_rate, use_quaternions_,
-                            data_in, input_data_format):
-    assert (input_data_format == 'channels_last')
-    tcn_data_format = 'channels_last'
-    num_frames = data_in[1]
-    logger.info(f"K.int_shape(spec_cnn) {K.int_shape(inp)}")
-    inp = Reshape((num_frames, -1))(inp)
-    logger.info(f"K.int_shape(inp) {K.int_shape(inp)}")
-
-    num_tcn_blocks = nb_tcn_blocks_
-
-    d = [2 ** exp for exp in range(0, num_tcn_blocks)]  # list of dilation factors
-    d = list(filter(lambda x: x <= num_frames, d))  # remove dilation factors larger than input
-
-    nb_tcn_filters_dilated = nb_tcn_filt_dilated_
-    nb_1x1_filters = 128
-    nb_1x1_filters_final = 128  # FNN contents, number of nodes
-
-    if use_quaternions_:
-        nb_tcn_filters_dilated = nb_tcn_filters_dilated // 4
-        nb_1x1_filters = nb_1x1_filters // 4
-        nb_1x1_filters_final = nb_1x1_filters_final // 4
-        ConvGeneric1D = QuaternionConv1D
-        BatchNormGeneric = BatchNormalization
-    else:
-        ConvGeneric1D = Conv1D
-        BatchNormGeneric = BatchNormalization
-
-    skip_outputs = []
-    layer_input = inp
-    for idx, dil_rate in enumerate(d):
-        spec_tcn_left = ConvGeneric1D(filters=nb_tcn_filters_dilated, kernel_size=(3), padding='same',
-                                      dilation_rate=dil_rate,
-                                      data_format=tcn_data_format)(layer_input)
-        spec_tcn_left = BatchNormGeneric()(spec_tcn_left)
-
-        # activations
-        tanh_out = Activation('tanh')(spec_tcn_left)
-        sigm_out = Activation('sigmoid')(spec_tcn_left)
-        spec_act = keras.layers.Multiply()([tanh_out, sigm_out])
-
-        # spatial dropout
-        spec_act = keras.layers.SpatialDropout1D(rate=spatial_dropout_rate)(spec_act)
-
-        # 1D convolution
-        skip_out = ConvGeneric1D(filters=nb_1x1_filters, kernel_size=(1), padding='same',
-                                 data_format=tcn_data_format)(spec_act)
-        res_output = keras.layers.Add()([layer_input, skip_out])
-
-        skip_outputs.append(skip_out)
-
-        layer_input = res_output
-    # ---------------------------------------
-
-    # Residual blocks sum
-    h = keras.layers.Add()(skip_outputs)
-    h = Activation('relu')(h)
-
-    logger.info(f"K.int_shape(h) {K.int_shape(h)}")
-
-    # 1D convolution
-    h = ConvGeneric1D(filters=nb_1x1_filters_final, kernel_size=1, padding='same', data_format=tcn_data_format)(h)
-    h = Activation('relu')(h)
-
-    # 1D convolution
-    h = ConvGeneric1D(filters=nb_1x1_filters_final, kernel_size=1, padding='same', data_format=tcn_data_format)(h)
-    input_output = Activation('tanh')(h)
-
-    logger.info(f"K.int_shape(input_output) {K.int_shape(input_output)}")
-
-    if input_data_format == 'channels_first':
-        # Put temporal dimension first again
-        input_output = Permute((2, 1))(input_output)
-        logger.info(f"K.int_shape(input_output) {K.int_shape(input_output)}")
-
-    return input_output
-
-
 def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropout_rate, use_quaternions_,
                        data_in, input_data_format):
 
@@ -162,9 +84,6 @@ def temporal_block_new(inp, nb_tcn_filt_dilated_, nb_tcn_blocks_, spatial_dropou
         spec_tcn_left = BatchNormGeneric()(spec_tcn_left)
 
         # activations
-        # tanh_out = Activation('tanh')(spec_tcn_left)
-        # sigm_out = Activation('sigmoid')(spec_tcn_left)
-        # spec_act = keras.layers.Multiply()([tanh_out, sigm_out])
         spec_act = tf.keras.activations.relu(spec_tcn_left, alpha=0.2)
 
         # spatial dropout

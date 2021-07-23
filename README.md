@@ -1,4 +1,4 @@
-# April 2021 - Running ANSIM experiments
+# Example - Running ANSIM experiments
 
 1. Clone this repository. Your folder tree will look like `something/QSELD/seld.py`. 
 
