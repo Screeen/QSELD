@@ -63,9 +63,9 @@ def get_params(argv):
     argv = argv.replace('q', '')
 	
     if 'gru' in argv:
+        logger.warning("GRU temporal block was set")
         params['recurrent_type'] = 'gru' 
     argv = argv.replace('gru', '')
-    logger.warning("GRU temporal block was set")
 
     if argv == '1':
         logger.warning("USING DEFAULT PARAMETERS\n")
@@ -161,7 +161,7 @@ def get_params(argv):
     else:
         params['num_classes'] = 11
     logger.warning(f"Num classes set to {params['num_classes']}")
-
+    
     if params['dataset'] != 'ansim' and params['train_val_split'] < 1.0:
         logger.warning(f"Overriding validation split! Old {params['val_split']}, new {params['train_split']}")
         params['val_split'] = params['train_split']

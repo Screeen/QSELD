@@ -7,10 +7,11 @@ def make_list(x):
 
 def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1):
 
-    ovs = make_list(overlaps)
-    splits = make_list(splits)
+    ovs = sorted(make_list(overlaps))
+    splits = sorted(make_list(splits))
     label_dirs = []
     suffix = ''
+    print(f"create_symlink_dir, base folder {base_folder}, {label_or_spec}, ovs {overlaps}, splits {splits}")
 
     for ov in ovs:
         for split in splits:
@@ -23,6 +24,7 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
         if dir_name in label_dirs:
             label_dirs_filtered.append(dir_name)
             print(f"dir_name {dir_name}")
+    label_dirs_filtered = sorted(label_dirs_filtered)
 
     symlink_dir_path = None
     if label_dirs_filtered:
@@ -56,7 +58,7 @@ datasets_dir = '../datasets'
 dataset = 'real'
 base_folder_ = os.path.join(datasets_dir, dataset)
 
-for overlaps in [[1, 2, 3]]:
-    for splits in [[1, 8]]:
-        for type in ['label', 'spec']:
+for type in ['label', 'spec']:
+    for overlaps in [[1, 2, 3]]:
+        for splits in [[9]]:
             create_symlink_dir(base_folder_, type, overlaps, splits)
