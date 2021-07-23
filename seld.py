@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plot
 import cls_data_generator
 import evaluation_metrics
-import keras_model
+import network
 import parameter
 import utils
 import keras.utils
@@ -440,8 +440,8 @@ def main(argv):
             params['rnn_size'], params['fnn_size']
         )
     )
-    
-    keras_model.set_global_num_classes(params)
+
+    network.set_global_num_classes(params)
     keras.backend.set_image_data_format(params['data_format'])
     logger.info(f"Data format set to {params['data_format']}")
     
@@ -456,17 +456,17 @@ def main(argv):
                                                             params['nb_cnn2d_filt'],
                                                             params['pool_size'], params['fnn_size'], params['loss_weights'])
         else:
-            model = keras_model.get_model(input_shape=data_in, output_shape=data_out, dropout_rate=params['dropout_rate'],
-                                          pool_size=params['pool_size'],
-                                          rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
-                                          weights=params['loss_weights'], data_format=params['data_format'],
-                                          params=params)
+            model = network.get_model(input_shape=data_in, output_shape=data_out, dropout_rate=params['dropout_rate'],
+                                      pool_size=params['pool_size'],
+                                      rnn_size=params['rnn_size'], fnn_size=params['fnn_size'],
+                                      weights=params['loss_weights'], data_format=params['data_format'],
+                                      params=params)
     
     model_path = os.path.join(log_dir, 'model')
     logger.info(f"model_path {model_path}")
     if os.path.exists(model_path):
         logger.info(f"Loading pretrained model from {model_path}")
-        model = keras_model.load_seld_model(model_path, params['doa_objective'])
+        model = network.load_seld_model(model_path, params['doa_objective'])
     else:
         if not isTraining:
             raise FileNotFoundError(f"test mode but model was not found at {os.path.abspath(model_path)}")

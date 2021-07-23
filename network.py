@@ -14,6 +14,7 @@ from tensorflow import keras
 
 from quaternion.qconv import *
 from quaternion.qrecurrent import QuaternionGRU
+from utils import make_list
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class Identity:
 
 
 def temporal_block_gru(inp, num_filters_gru=0, dropout=0, data_in=(), input_data_format='channels_last'):
-    for idx, nb_rnn_filt in enumerate(num_filters_gru):
+    for idx, nb_rnn_filt in enumerate(make_list(num_filters_gru)):
         inp = Bidirectional(
             GRU(nb_rnn_filt, activation='tanh', dropout=dropout, recurrent_dropout=dropout,
                 return_sequences=True),
