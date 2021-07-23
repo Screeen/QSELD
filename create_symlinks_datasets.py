@@ -55,10 +55,12 @@ def create_symlink_dir(base_folder, label_or_spec='label', overlaps=1, splits=1)
 
 
 datasets_dir = '../datasets'
-dataset = 'real'
+dataset = 'ansim'
 base_folder_ = os.path.join(datasets_dir, dataset)
 
 for type in ['label', 'spec']:
     for overlaps in [[1, 2, 3]]:
-        for splits in [[9]]:
+        for splits in [[1,2],[3]]:
             create_symlink_dir(base_folder_, type, overlaps, splits)
+
+

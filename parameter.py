@@ -97,6 +97,16 @@ def get_params(argv):
         params['dataset'] = 'ansim'
         params['sequence_length'] = 512
         params['nb_epochs'] = 250
+        
+    # Different datasets
+    elif argv == '2all':  # anechoic simulated Ambisonic data set        
+        params['dataset'] = 'ansim'
+        params['sequence_length'] = 512
+        params['nb_epochs'] = 500
+        params['overlap'] = [1,2,3]
+        params['train_split'] = [1,2]
+        params['test_split'] = [3]
+        params['val_split'] = params['train_split']
 
     elif argv == '3ov2':  # reverberant simulated Ambisonic data set
         params['dataset'] = 'resim'
@@ -171,10 +181,6 @@ def get_params(argv):
     if params['dataset'] != 'ansim' and params['train_val_split'] < 1.0:
         logger.warning(f"Overriding validation split! Old {params['val_split']}, new {params['train_split']}")
         params['val_split'] = params['train_split']
-
-    #if params['dataset'] != 'ansim':
-    #    logger.warning(f"Overriding sequence_length split! Old {params['sequence_length']}, new 256")
-    #    params['sequence_length'] = 256
 
     for key, value in params.items():
         logger.info("{}: {}".format(key, value))

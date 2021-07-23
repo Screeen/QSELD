@@ -37,7 +37,7 @@ def temporal_block_gru(inp, num_filters_gru=0, dropout=0, data_in=(), input_data
 
 
 def temporal_block_qgru(inp, num_filters_gru=0, dropout=0):
-    for idx, nb_rnn_filt in enumerate(num_filters_gru):
+    for idx, nb_rnn_filt in enumerate(make_list(num_filters_gru)):
         inp = Bidirectional(
             QuaternionGRU(nb_rnn_filt, activation='tanh', dropout=dropout, recurrent_dropout=dropout,
                           return_sequences=True),
