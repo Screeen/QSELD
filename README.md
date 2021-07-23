@@ -1,4 +1,8 @@
-# Example - Running ANSIM experiments
+# QSELD-TCN: Sound Event Localization and Detection via Temporal Convolutional Networks using Quaternions
+
+This repository contains an implementation of a temporal convolutional network based on quaternion algebra for sound event localization and detection.
+
+## Example - Running ANSIM experiments
 
 1. Clone this repository. Your folder tree will look like `something/QSELD/seld.py`. 
 
@@ -29,21 +33,19 @@
 
 -----------------------------------
 
-# SELD-TCN: Sound Event Localization and Detection via Temporal Convolutional Networks
-
-This repository contains a SELD-TCN implementation.
+## SELD-TCN: Sound Event Localization and Detection via Temporal Convolutional Networks
 
 ![picture](images/img1.PNG)
 
 The SELD-TCN was originally proposed in https://arxiv.org/abs/2003.01609.  
-SELDnet implementation (https://github.com/sharathadavanne/seld-net.git) has been used as a starting point for the development of this network.
+SELDnet implementation (https://github.com/sharathadavanne/seld-net.git) has been used as a starting point.
 
 Dataset:
 ANSIM (TUT Sound Events 2018 - Ambisonic, Anechoic and Synthetic Impulse Response Dataset) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1237703.svg)](https://doi.org/10.5281/zenodo.1237703)
 
 --------------------------------
 
-# Sound event localization, detection, and tracking of multiple overlapping stationary and moving sources using convolutional recurrent neural network (SELDnet)
+## Sound event localization, detection, and tracking of multiple overlapping stationary and moving sources using convolutional recurrent neural network (SELDnet)
 
 **We have formalized this work as a research challenges at IEEE AASP workshop DCASE**. 
   1. In the first version of the [sound event localization and detection (SELD) challenge at DCASE 2019](http://dcase.community/challenge2019/task-sound-event-localization-and-detection). We provided dataset with stationary sources in multiple reverberant scenarios.
